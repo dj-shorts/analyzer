@@ -1,4 +1,4 @@
-# MVP Analyzer v0.2.0
+# MVP Analyzer
 
 AI-powered music video highlight extraction tool for creating short clips for social media platforms.
 
