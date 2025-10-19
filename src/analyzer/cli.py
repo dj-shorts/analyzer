@@ -5,7 +5,7 @@ Command-line interface for MVP Analyzer.
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 
 import click
 from rich.console import Console
@@ -15,6 +15,79 @@ from .core import Analyzer
 from .config import Config
 
 console = Console()
+
+
+def _parse_seed_timestamps(seeds: str) -> List[float]:
+    """
+    Parse seed timestamps from string format.
+    
+    Args:
+        seeds: Comma-separated seed timestamps in HH:MM:SS format
+        
+    Returns:
+        List of timestamps in seconds
+        
+    Raises:
+        ValueError: If seed format is invalid
+    """
+    seed_timestamps = []
+    
+    for seed in seeds.split(","):
+        seed = seed.strip()
+        if not seed:
+            continue
+            
+        try:
+            # Parse HH:MM:SS format
+            parts = seed.split(":")
+            if len(parts) == 3:
+                hours, minutes, seconds = parts
+                hours = int(hours)
+                minutes = int(minutes)
+                seconds = float(seconds)  # Allow fractional seconds
+                
+                # Validate ranges
+                if not (0 <= hours < 24):
+                    raise ValueError(f"Hours must be 0-23, got {hours}")
+                if not (0 <= minutes < 60):
+                    raise ValueError(f"Minutes must be 0-59, got {minutes}")
+                if not (0 <= seconds < 60):
+                    raise ValueError(f"Seconds must be 0-59.999..., got {seconds}")
+                
+                total_seconds = hours * 3600 + minutes * 60 + seconds
+                seed_timestamps.append(total_seconds)
+                
+            elif len(parts) == 2:
+                # Allow MM:SS format
+                minutes, seconds = parts
+                minutes = int(minutes)
+                seconds = float(seconds)
+                
+                if not (0 <= minutes < 60):
+                    raise ValueError(f"Minutes must be 0-59, got {minutes}")
+                if not (0 <= seconds < 60):
+                    raise ValueError(f"Seconds must be 0-59.999..., got {seconds}")
+                
+                total_seconds = minutes * 60 + seconds
+                seed_timestamps.append(total_seconds)
+                
+            else:
+                # Try to parse as raw seconds
+                try:
+                    total_seconds = float(seed)
+                    if total_seconds < 0:
+                        raise ValueError(f"Timestamp must be positive, got {total_seconds}")
+                    seed_timestamps.append(total_seconds)
+                except ValueError:
+                    raise ValueError(f"Invalid seed format: '{seed}'. Use HH:MM:SS, MM:SS, or seconds format.")
+                    
+        except ValueError as e:
+            raise ValueError(f"Invalid seed timestamp '{seed}': {e}")
+    
+    # Sort timestamps
+    seed_timestamps.sort()
+    
+    return seed_timestamps
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -134,16 +207,12 @@ def main(
         # Parse seed timestamps if provided
         seed_timestamps = []
         if seeds:
-            for seed in seeds.split(","):
-                seed = seed.strip()
-                # Convert HH:MM:SS to seconds
-                parts = seed.split(":")
-                if len(parts) == 3:
-                    hours, minutes, seconds = map(int, parts)
-                    total_seconds = hours * 3600 + minutes * 60 + seconds
-                    seed_timestamps.append(total_seconds)
-                else:
-                    logger.warning(f"Invalid seed format: {seed}. Use HH:MM:SS format.")
+            try:
+                seed_timestamps = _parse_seed_timestamps(seeds)
+                console.print(f"[green]Parsed {len(seed_timestamps)} seed timestamps: {[f'{s:.1f}s' for s in seed_timestamps]}[/green]")
+            except ValueError as e:
+                console.print(f"[red]Error parsing seed timestamps: {e}[/red]")
+                sys.exit(1)
         
         # Create configuration
         config = Config(
