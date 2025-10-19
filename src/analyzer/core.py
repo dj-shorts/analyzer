@@ -115,7 +115,7 @@ class Analyzer:
                 "start": quantized["start_time"],
                 "length": quantized["duration"],
                 "end": quantized["start_time"] + quantized["duration"],
-                "aligned_to_beat": quantized["aligned"],
+                "aligned": quantized["aligned"],
                 "beat_confidence": quantized["confidence"]
             })
             

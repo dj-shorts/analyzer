@@ -54,6 +54,9 @@ class BeatTracker:
             tightness=100   # Beat tracking tightness
         )
         
+        # Ensure tempo is a scalar
+        tempo = float(tempo.item()) if hasattr(tempo, 'item') else float(tempo)
+        
         # Convert beat frames to time
         beat_times = librosa.frames_to_time(beats, sr=sample_rate, hop_length=self.hop_length)
         
@@ -133,16 +136,16 @@ class BeatTracker:
         beat_interval = 60.0 / tempo  # seconds per beat
         
         # Generate regular grid starting from first beat
-        start_time = float(beat_times[0])
-        end_time = float(beat_times[-1])
+        start_time = float(beat_times[0]) if len(beat_times) > 0 else 0.0
+        end_time = float(beat_times[-1]) if len(beat_times) > 0 else 0.0
         
         # Create regular beat grid
-        grid_times = np.arange(start_time, end_time + beat_interval, beat_interval)
+        grid_times = np.arange(float(start_time), float(end_time) + beat_interval, beat_interval)
         
         # Calculate bar times (assuming 4/4 time signature)
         bars_per_minute = tempo / 4  # 4 beats per bar
         bar_interval = 60.0 / bars_per_minute
-        bar_times = np.arange(start_time, end_time + bar_interval, bar_interval)
+        bar_times = np.arange(float(start_time), float(end_time) + bar_interval, bar_interval)
         
         return {
             "grid_times": grid_times.tolist(),
