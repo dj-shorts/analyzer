@@ -105,6 +105,11 @@ def setup_logging(verbose: bool = False) -> None:
     type=str, 
     help="RAM limit (e.g., '2GB')"
 )
+@click.option(
+    "--metrics", 
+    type=click.Path(path_type=Path), 
+    help="Export Prometheus metrics to file"
+)
 def main(
     input: Path,
     clips: int,
@@ -120,6 +125,7 @@ def main(
     verbose: bool,
     threads: Optional[int],
     ram_limit: Optional[str],
+    metrics: Optional[Path],
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -183,6 +189,50 @@ def main(
         console.print(f"[blue]Results saved to:[/blue]")
         console.print(f"  • JSON: {out_json}")
         console.print(f"  • CSV: {out_csv}")
+        
+        # Export metrics if requested
+        if metrics:
+            from .metrics import format_prometheus_metrics
+            metrics_data = results.get("metrics", {})
+            if metrics_data:
+                # Convert JSON metrics back to AnalysisMetrics for formatting
+                from .metrics import AnalysisMetrics, AnalysisStage
+                analysis_metrics = AnalysisMetrics()
+                
+                # Set timing data
+                timings = metrics_data.get("timings", {})
+                analysis_metrics.total_duration = timings.get("total_duration_seconds", 0.0)
+                
+                # Set other metrics
+                novelty = metrics_data.get("novelty", {})
+                analysis_metrics.novelty_peaks_count = novelty.get("peaks_count", 0)
+                analysis_metrics.novelty_frames_count = novelty.get("frames_count", 0)
+                
+                audio = metrics_data.get("audio", {})
+                analysis_metrics.audio_duration = audio.get("duration_seconds", 0.0)
+                analysis_metrics.audio_sample_rate = audio.get("sample_rate_hz", 0)
+                analysis_metrics.audio_bytes = audio.get("bytes", 0)
+                
+                processing = metrics_data.get("processing", {})
+                analysis_metrics.clips_generated = processing.get("clips_generated", 0)
+                analysis_metrics.segments_built = processing.get("segments_built", 0)
+                analysis_metrics.memory_peak_mb = processing.get("memory_peak_mb", 0.0)
+                
+                configuration = metrics_data.get("configuration", {})
+                analysis_metrics.clips_requested = configuration.get("clips_requested", 0)
+                analysis_metrics.min_clip_length = configuration.get("min_clip_length_seconds", 0.0)
+                analysis_metrics.max_clip_length = configuration.get("max_clip_length_seconds", 0.0)
+                analysis_metrics.with_motion = configuration.get("with_motion", False)
+                analysis_metrics.align_to_beat = configuration.get("align_to_beat", False)
+                
+                # Write Prometheus metrics
+                prometheus_metrics = format_prometheus_metrics(analysis_metrics)
+                with open(metrics, 'w') as f:
+                    f.write(prometheus_metrics)
+                
+                console.print(f"  • Metrics: {metrics}")
+                logger.info(f"Prometheus metrics exported to {metrics}")
+        
         
     except KeyboardInterrupt:
         console.print("\n[yellow]Analysis interrupted by user[/yellow]")

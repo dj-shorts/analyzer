@@ -173,6 +173,134 @@
         }
       },
       "description": "Summary statistics of the analysis"
+    },
+    "metrics": {
+      "type": "object",
+      "description": "Prometheus-compatible metrics for observability",
+      "properties": {
+        "timings": {
+          "type": "object",
+          "properties": {
+            "total_duration_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Total analysis duration in seconds"
+            },
+            "stages": {
+              "type": "object",
+              "description": "Timing for each analysis stage"
+            }
+          }
+        },
+        "novelty": {
+          "type": "object",
+          "properties": {
+            "peaks_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of novelty peaks detected"
+            },
+            "frames_count": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of novelty frames processed"
+            }
+          }
+        },
+        "audio": {
+          "type": "object",
+          "properties": {
+            "duration_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Audio duration in seconds"
+            },
+            "sample_rate_hz": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Audio sample rate in Hz"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Audio data size in bytes"
+            }
+          }
+        },
+        "video": {
+          "type": "object",
+          "properties": {
+            "duration_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Video duration in seconds"
+            },
+            "bytes": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Video file size in bytes"
+            },
+            "width_pixels": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Video width in pixels"
+            },
+            "height_pixels": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Video height in pixels"
+            }
+          }
+        },
+        "processing": {
+          "type": "object",
+          "properties": {
+            "clips_generated": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of clips generated"
+            },
+            "segments_built": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of segments built"
+            },
+            "memory_peak_mb": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Peak memory usage in MB"
+            }
+          }
+        },
+        "configuration": {
+          "type": "object",
+          "properties": {
+            "clips_requested": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Number of clips requested"
+            },
+            "min_clip_length_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Minimum clip length in seconds"
+            },
+            "max_clip_length_seconds": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Maximum clip length in seconds"
+            },
+            "with_motion": {
+              "type": "boolean",
+              "description": "Whether motion analysis was enabled"
+            },
+            "align_to_beat": {
+              "type": "boolean",
+              "description": "Whether beat alignment was enabled"
+            }
+          }
+        }
+      }
     }
   },
   "additionalProperties": false

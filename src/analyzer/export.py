@@ -7,7 +7,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import numpy as np
 
@@ -24,7 +24,7 @@ class ResultExporter:
         """Initialize result exporter with configuration."""
         self.config = config
     
-    def export(self, segments_data: Dict[str, Any], audio_data: Dict[str, Any]) -> Dict[str, Any]:
+    def export(self, segments_data: Dict[str, Any], audio_data: Dict[str, Any], metrics_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Export results to CSV and JSON files.
         
@@ -43,7 +43,7 @@ class ResultExporter:
         csv_path = self._export_csv(segments)
         
         # Export to JSON
-        json_path = self._export_json(segments, audio_data)
+        json_path = self._export_json(segments, audio_data, metrics_data)
         
         # Validate exported files
         self._validate_exports(json_path, csv_path)
@@ -95,7 +95,7 @@ class ResultExporter:
         logger.info(f"CSV exported to {csv_path}")
         return csv_path
     
-    def _export_json(self, segments: List[Dict[str, Any]], audio_data: Dict[str, Any]) -> Path:
+    def _export_json(self, segments: List[Dict[str, Any]], audio_data: Dict[str, Any], metrics_data: Optional[Dict[str, Any]] = None) -> Path:
         """
         Export segments to JSON format with metadata.
         
@@ -140,6 +140,10 @@ class ResultExporter:
                 )
             }
         }
+        
+        # Add metrics if provided
+        if metrics_data:
+            json_data["metrics"] = metrics_data
         
         # Convert numpy types to native Python types for JSON serialization
         def convert_numpy_types(obj):

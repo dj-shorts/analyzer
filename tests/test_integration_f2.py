@@ -34,6 +34,7 @@ class TestEndToEndPipelineEpicF2:
     def setup_method(self):
         """Set up test fixtures and mocks."""
         self.config = Config(
+            input_path=Path("test_video.mp4"),
             clips_count=3,
             min_length=10.0,
             max_length=20.0,

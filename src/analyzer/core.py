@@ -12,6 +12,7 @@ from .peaks import PeakPicker
 from .segments import SegmentBuilder
 from .export import ResultExporter
 from .beats import BeatTracker, BeatQuantizer
+from .metrics import MetricsCollector, AnalysisStage
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +23,9 @@ class Analyzer:
     def __init__(self, config: Config):
         """Initialize the analyzer with configuration."""
         self.config = config
+        
+        # Initialize metrics collector
+        self.metrics_collector = MetricsCollector()
         
         # Initialize components
         self.audio_extractor = AudioExtractor(config)
@@ -37,7 +41,7 @@ class Analyzer:
     
     def analyze(self) -> Dict[str, Any]:
         """
-        Run the complete analysis pipeline.
+        Run the complete analysis pipeline with metrics collection.
         
         Returns:
             Dict containing analysis results and metadata
@@ -45,27 +49,71 @@ class Analyzer:
         logger.info("Starting analysis pipeline")
         
         try:
+            # Set configuration metrics
+            self.metrics_collector.set_configuration_metrics(
+                clips_requested=self.config.clips_count,
+                min_length=self.config.min_clip_length,
+                max_length=self.config.max_clip_length,
+                with_motion=self.config.with_motion,
+                align_to_beat=self.config.align_to_beat
+            )
+            
             # Step 1: Extract audio from video
             logger.info("Step 1: Extracting audio from video")
+            self.metrics_collector.start_stage(AnalysisStage.AUDIO_EXTRACTION)
             audio_data = self.audio_extractor.extract()
+            self.metrics_collector.finish_stage(AnalysisStage.AUDIO_EXTRACTION)
+            
+            # Set audio metrics
+            self.metrics_collector.set_audio_metrics(
+                duration=audio_data.get("duration", 0.0),
+                sample_rate=audio_data.get("sample_rate", 0),
+                bytes_count=len(audio_data.get("audio", [])) * 4  # Approximate bytes
+            )
             
             # Step 2: Beat tracking (if enabled)
             beat_data = None
             if self.config.align_to_beat:
                 logger.info("Step 2: Beat tracking and BPM estimation")
+                self.metrics_collector.start_stage(AnalysisStage.BEAT_TRACKING)
                 beat_data = self.beat_tracker.track_beats(audio_data)
+                self.metrics_collector.finish_stage(AnalysisStage.BEAT_TRACKING)
             
             # Step 3: Compute novelty scores
             logger.info("Step 3: Computing novelty scores")
+            self.metrics_collector.start_stage(AnalysisStage.NOVELTY_DETECTION)
             novelty_scores = self.novelty_detector.compute_novelty(audio_data)
+            self.metrics_collector.finish_stage(AnalysisStage.NOVELTY_DETECTION)
+            
+            # Set novelty metrics
+            self.metrics_collector.set_novelty_metrics(
+                peaks_count=0,  # Will be updated after peak picking
+                frames_count=len(novelty_scores.get("time_axis", []))
+            )
             
             # Step 4: Find peaks
             logger.info("Step 4: Finding peaks")
+            self.metrics_collector.start_stage(AnalysisStage.PEAK_PICKING)
             peaks = self.peak_picker.find_peaks(novelty_scores)
+            self.metrics_collector.finish_stage(AnalysisStage.PEAK_PICKING)
+            
+            # Update novelty metrics with actual peaks count
+            self.metrics_collector.set_novelty_metrics(
+                peaks_count=len(peaks.get("peaks", [])),
+                frames_count=len(novelty_scores.get("time_axis", []))
+            )
             
             # Step 5: Build segments
             logger.info("Step 5: Building segments")
+            self.metrics_collector.start_stage(AnalysisStage.SEGMENT_BUILDING)
             segments = self.segment_builder.build_segments(peaks)
+            self.metrics_collector.finish_stage(AnalysisStage.SEGMENT_BUILDING)
+            
+            # Set processing metrics
+            self.metrics_collector.set_processing_metrics(
+                clips_generated=len(segments.get("segments", [])),
+                segments_built=len(segments.get("segments", []))
+            )
             
             # Step 6: Beat quantization (if enabled)
             if self.config.align_to_beat and beat_data:
@@ -74,7 +122,14 @@ class Analyzer:
             
             # Step 7: Export results
             logger.info("Step 7: Exporting results")
-            results = self.result_exporter.export(segments, audio_data)
+            self.metrics_collector.start_stage(AnalysisStage.EXPORT)
+            
+            # Finish metrics collection first
+            final_metrics = self.metrics_collector.finish()
+            
+            # Export with metrics
+            results = self.result_exporter.export(segments, audio_data, final_metrics.to_json_metrics())
+            self.metrics_collector.finish_stage(AnalysisStage.EXPORT)
             
             # Add beat data to results if available
             if beat_data:
@@ -85,6 +140,8 @@ class Analyzer:
             
         except Exception as e:
             logger.error(f"Analysis pipeline failed: {e}", exc_info=True)
+            # Still finish metrics collection even on error
+            self.metrics_collector.finish()
             raise
     
     def _quantize_segments(self, segments: Dict[str, Any], beat_data: Dict[str, Any]) -> Dict[str, Any]:
