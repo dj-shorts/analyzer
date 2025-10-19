@@ -1,0 +1,33 @@
+name: CI (analyzer)
+on:
+  push:
+    paths:
+      - 'analyzer/**'
+      - '.github/workflows/ci-analyzer.yml'
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Install deps
+        working-directory: analyzer
+        run: |
+          uv venv
+          . .venv/bin/activate || . venv/bin/activate || true
+          uv pip install -r requirements.txt
+      - name: Lint & Typecheck
+        working-directory: analyzer
+        run: |
+          pip install ruff mypy
+          ruff check src
+          mypy src
+      - name: Run tests
+        working-directory: analyzer
+        run: pytest -q

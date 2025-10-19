@@ -1,0 +1,4 @@
+clip_id,start,end,center,score,seed_based,aligned,length
+1,45.635,72.088,55.635,0.764,False,False,26.453
+2,59.312,86.079,69.312,0.784,False,False,26.767
+3,91.657,120.252,101.657,0.906,False,False,28.595
