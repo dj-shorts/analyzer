@@ -59,6 +59,8 @@ This is the first major release of the MVP Analyzer, providing core functionalit
   - D1: Original 16:9 (stream copy / fallback h264)
   - D2: Export 9:16 and 1:1 (crop+scale)
   - D3: Auto-reframe (HOG/pose) for vertical/square
+- **Epic G**: Observability (G1)
+  - G1: Prometheus metrics implementation with CLI flag
 
 #### v0.3.0 - Advanced CLI & Integration
 - **Epic E**: CLI Integration (E2-E3)
