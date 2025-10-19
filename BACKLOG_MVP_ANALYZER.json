@@ -1,0 +1,197 @@
+{
+  "project": "MVP Analyzer",
+  "version": "v0.1.0",
+  "last_updated": "2025-10-19T22:00:00Z",
+  "summary": {
+    "total_issues": 24,
+    "completed": 13,
+    "remaining": 11,
+    "completion_rate": "54%"
+  },
+  "releases": {
+    "v0.1.0": {
+      "status": "completed",
+      "date": "2025-10-19",
+      "epics": ["A", "B", "F", "E1"],
+      "issues": [1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 17, 18, 19],
+      "description": "Core Features Release - Base analyzer implementation with testing suite"
+    },
+    "v0.2.0": {
+      "status": "planned",
+      "epics": ["C", "D", "G"],
+      "issues": [10, 11, 12, 13, 20],
+      "description": "Video Export & Motion Analysis + Observability"
+    },
+    "v0.3.0": {
+      "status": "planned",
+      "epics": ["E"],
+      "issues": [15, 16],
+      "description": "Advanced CLI & Integration"
+    },
+    "v0.4.0": {
+      "status": "planned",
+      "epics": ["H"],
+      "issues": [21, 22],
+      "description": "Packaging & Deployment"
+    },
+    "v0.5.0": {
+      "status": "planned",
+      "epics": ["I"],
+      "issues": [23, 24],
+      "description": "Experimental Features"
+    }
+  },
+  "epics": {
+    "A": {
+      "name": "Base Analyzer Implementation",
+      "status": "completed",
+      "issues": [1, 2, 3, 4, 5, 6, 7],
+      "description": "Core audio processing, novelty detection, peak picking, and segment building"
+    },
+    "B": {
+      "name": "Beat Quantization Implementation",
+      "status": "completed",
+      "issues": [8, 9],
+      "description": "Local BPM detection and beat-aligned clip boundaries"
+    },
+    "C": {
+      "name": "Motion Analysis",
+      "status": "planned",
+      "issues": [10],
+      "description": "Optical flow analysis and motion-audio score mixing"
+    },
+    "D": {
+      "name": "Video Export",
+      "status": "planned",
+      "issues": [11, 12, 13],
+      "description": "Multi-format video export with auto-reframing"
+    },
+    "E": {
+      "name": "CLI Integration",
+      "status": "partial",
+      "completed_issues": [14],
+      "remaining_issues": [15, 16],
+      "description": "CLI contract, progress events, and resource management"
+    },
+    "F": {
+      "name": "Testing Suite",
+      "status": "completed",
+      "issues": [17, 18, 19],
+      "description": "Unit, integration, and performance tests"
+    },
+    "G": {
+      "name": "Observability",
+      "status": "planned",
+      "issues": [20],
+      "description": "Prometheus metrics and monitoring"
+    },
+    "H": {
+      "name": "Packaging",
+      "status": "planned",
+      "issues": [21, 22],
+      "description": "Docker containerization and CI/CD pipeline"
+    },
+    "I": {
+      "name": "Experiment",
+      "status": "planned",
+      "issues": [23, 24],
+      "description": "Dataset collection and user preference evaluation"
+    }
+  },
+  "issues": {
+    "1": {"title": "Project initialization with uv and basic structure", "status": "completed", "epic": "A"},
+    "2": {"title": "Audio extraction with improved ffmpeg handling", "status": "completed", "epic": "A"},
+    "3": {"title": "Novelty detection with onset strength and spectral contrast", "status": "completed", "epic": "A"},
+    "4": {"title": "Peak picking with minimum spacing and top-K selection", "status": "completed", "epic": "A"},
+    "5": {"title": "Seed timestamps parsing and local peak detection", "status": "completed", "epic": "A"},
+    "6": {"title": "Pre-roll and segment building with min/max length", "status": "completed", "epic": "A"},
+    "7": {"title": "Results output CSV + JSON contract", "status": "completed", "epic": "A"},
+    "8": {"title": "Local BPM and beat grid detection", "status": "completed", "epic": "B"},
+    "9": {"title": "Clip start and duration quantization to beat boundaries", "status": "completed", "epic": "B"},
+    "10": {"title": "Optical flow Farnebäck (3-4 fps) and mixing with audio score", "status": "open", "epic": "C"},
+    "11": {"title": "Original 16:9 (stream copy / fallback h264)", "status": "open", "epic": "D"},
+    "12": {"title": "Export 9:16 and 1:1 (crop+scale)", "status": "open", "epic": "D"},
+    "13": {"title": "Auto-reframe (HOG/pose) for vertical/square", "status": "open", "epic": "D"},
+    "14": {"title": "CLI contract and JSON schema validation", "status": "completed", "epic": "E"},
+    "15": {"title": "Progress/events in stdout (for SSE)", "status": "open", "epic": "E"},
+    "16": {"title": "Cancellation and resource management", "status": "open", "epic": "E"},
+    "17": {"title": "Unit tests for signal processing, peak detection, and beat quantization", "status": "completed", "epic": "F"},
+    "18": {"title": "Integration tests on short clips", "status": "completed", "epic": "F"},
+    "19": {"title": "Performance tests and profiling", "status": "completed", "epic": "F"},
+    "20": {"title": "Prometheus metrics implementation with CLI flag", "status": "open", "epic": "G"},
+    "21": {"title": "Dockerfile for analyzer", "status": "open", "epic": "H"},
+    "22": {"title": "CI: tests, linters, security", "status": "open", "epic": "H"},
+    "23": {"title": "Dataset collection and A/B/C/D generation script", "status": "open", "epic": "I"},
+    "24": {"title": "Online user preference evaluation", "status": "open", "epic": "I"}
+  },
+  "milestones": {
+    "v0.1.0": {
+      "target_date": "2025-10-19",
+      "status": "completed",
+      "deliverables": [
+        "Core audio analysis pipeline",
+        "Beat quantization system",
+        "Comprehensive testing suite",
+        "JSON schema validation",
+        "Production-ready CLI"
+      ]
+    },
+    "v0.2.0": {
+      "target_date": "TBD",
+      "status": "planned",
+      "deliverables": [
+        "Motion analysis integration",
+        "Multi-format video export",
+        "Prometheus metrics",
+        "Auto-reframing capabilities"
+      ]
+    },
+    "v0.3.0": {
+      "target_date": "TBD",
+      "status": "planned",
+      "deliverables": [
+        "Real-time progress events",
+        "Resource management",
+        "SSE integration support"
+      ]
+    },
+    "v0.4.0": {
+      "target_date": "TBD",
+      "status": "planned",
+      "deliverables": [
+        "Docker containerization",
+        "CI/CD pipeline",
+        "Automated testing"
+      ]
+    },
+    "v0.5.0": {
+      "target_date": "TBD",
+      "status": "planned",
+      "deliverables": [
+        "Dataset collection tools",
+        "A/B testing framework",
+        "User preference evaluation"
+      ]
+    }
+  },
+  "technical_debt": {
+    "resolved": [
+      "Repository cleanup completed",
+      "Development files removed from production",
+      "Codex review issues fixed",
+      "Documentation aligned with implementation"
+    ],
+    "pending": [
+      "Epic G1 metrics implementation (moved to v0.2.0)",
+      "Performance optimization opportunities",
+      "Additional error handling improvements"
+    ]
+  },
+  "quality_metrics": {
+    "test_coverage": "Comprehensive",
+    "code_quality": "Production-ready",
+    "documentation": "Complete",
+    "performance": "Optimized",
+    "security": "Basic (needs CI/CD for enhancement)"
+  }
+}

@@ -141,13 +141,8 @@ The analyzer supports various configuration options:
 
 ### CSV Output
 Contains segment information in tabular format:
-- `clip_id`: Unique identifier for each clip
 - `start`: Start time in seconds
 - `end`: End time in seconds
-- `center`: Center time of the segment
-- `score`: Novelty score (0-1)
-- `seed_based`: Whether segment was based on seed timestamp
-- `aligned`: Whether segment is aligned to beat boundaries
 - `length`: Segment length in seconds
 
 ### JSON Output
@@ -182,9 +177,9 @@ uv run pytest tests/test_performance_f3.py
 
 ```bash
 # Format code
-uv run black analyzer tests
+uv run ruff format analyzer tests
 
-# Lint code
+# Check code quality
 uv run ruff check analyzer tests
 
 # Type checking
