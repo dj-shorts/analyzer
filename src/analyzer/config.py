@@ -36,6 +36,9 @@ class Config(BaseModel):
     threads: Optional[int] = Field(default=None, ge=1, description="Number of threads to use")
     ram_limit: Optional[str] = Field(default=None, description="RAM limit (e.g., '2GB')")
     
+    # Progress events settings
+    progress_events: bool = Field(default=True, description="Enable progress events in stdout for SSE")
+    
     @field_validator("max_clip_length")
     @classmethod
     def max_length_must_be_greater_than_min(cls, v, info):

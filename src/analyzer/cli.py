@@ -105,6 +105,12 @@ def setup_logging(verbose: bool = False) -> None:
     type=str, 
     help="RAM limit (e.g., '2GB')"
 )
+@click.option(
+    "--progress-events",
+    is_flag=True,
+    default=True,
+    help="Enable progress events in stdout for SSE (default: True)"
+)
 def main(
     input: Path,
     clips: int,
@@ -120,6 +126,7 @@ def main(
     verbose: bool,
     threads: Optional[int],
     ram_limit: Optional[str],
+    progress_events: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -160,6 +167,7 @@ def main(
             output_csv=out_csv,
             threads=threads,
             ram_limit=ram_limit,
+            progress_events=progress_events,
         )
         
         # Create and run analyzer
