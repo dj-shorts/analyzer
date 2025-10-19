@@ -12,6 +12,7 @@ from .peaks import PeakPicker
 from .segments import SegmentBuilder
 from .export import ResultExporter
 from .beats import BeatTracker, BeatQuantizer
+from .video import VideoExporter
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,10 @@ class Analyzer:
         self.peak_picker = PeakPicker(config)
         self.segment_builder = SegmentBuilder(config)
         self.result_exporter = ResultExporter(config)
+        
+        # Initialize video exporter if enabled
+        if config.export_video:
+            self.video_exporter = VideoExporter(config)
         
         # Initialize beat tracking components if enabled
         if config.align_to_beat:
@@ -75,6 +80,15 @@ class Analyzer:
             # Step 7: Export results
             logger.info("Step 7: Exporting results")
             results = self.result_exporter.export(segments, audio_data)
+            
+            # Step 8: Export video clips (if enabled)
+            if self.config.export_video:
+                logger.info("Step 8: Exporting video clips")
+                video_export_results = self.video_exporter.export_clips(
+                    segments, self.config.input_path, self.config.export_dir
+                )
+                results["video_export"] = video_export_results
+                logger.info(f"Video export completed: {video_export_results['exported_clips']}/{video_export_results['total_clips']} clips exported")
             
             # Add beat data to results if available
             if beat_data:
