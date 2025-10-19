@@ -30,11 +30,6 @@ This is the first major release of the MVP Analyzer, providing core functionalit
 - **Performance Tests**: Profiling and optimization validation
 - **Test Coverage**: High test coverage across all modules
 
-#### 📈 Observability
-- **Prometheus Metrics**: Production-ready metrics collection
-- **Performance Monitoring**: Detailed timing and resource usage metrics
-- **Stage Tracking**: Granular performance analysis by pipeline stage
-
 ## 📋 Epic Coverage
 
 ### ✅ Completed (v0.1.0)
@@ -54,7 +49,6 @@ This is the first major release of the MVP Analyzer, providing core functionalit
   - F2: Integration tests on short clips
   - F3: Performance tests and profiling
 - **Epic E1**: JSON Schema Validation
-- **Epic G1**: Prometheus Metrics Implementation
 
 ### 🔮 Roadmap (Future Releases)
 
@@ -113,14 +107,14 @@ uv run analyzer video.mp4 --clips 6 --seeds "10.5,25.3,45.1"
 
 ### Advanced Usage
 ```bash
-# Export with metrics
-uv run analyzer video.mp4 --clips 6 --metrics metrics.prom
-
 # Custom clip parameters
 uv run analyzer video.mp4 --clips 8 --min-len 20 --max-len 40
 
 # Performance profiling
 uv run analyzer video.mp4 --clips 6 --threads 4 --ram-limit 2GB
+
+# With seed timestamps
+uv run analyzer video.mp4 --clips 6 --seeds "10.5,25.3,45.1"
 ```
 
 ## ⚙️ Configuration
@@ -137,7 +131,6 @@ The analyzer supports various configuration options:
 - `--seeds`: Comma-separated seed timestamps (HH:MM:SS format)
 - `--out-json`: Output JSON file path (default: highlights.json)
 - `--out-csv`: Output CSV file path (default: highlights.csv)
-- `--metrics`: Export Prometheus metrics to file
 - `--threads`: Number of threads to use (default: auto)
 - `--ram-limit`: RAM limit (e.g., '2GB')
 - `--verbose`: Enable verbose logging
@@ -161,15 +154,6 @@ Contains detailed metadata and analysis results:
 - Audio file metadata
 - Summary statistics
 - Complete segment information
-- Prometheus metrics (if enabled)
-
-### Prometheus Metrics
-When using `--metrics` flag, exports metrics in Prometheus format:
-- `job_duration_seconds{stage}`: Duration of analysis stages
-- `novelty_peaks_count`: Number of novelty peaks detected
-- `audio_duration_seconds`: Audio duration
-- `clips_generated`: Number of clips generated
-- And many more...
 
 ## 🧪 Development
 
@@ -225,7 +209,6 @@ python -m src.analyzer.schema output.json --verbose
 - **Audio Processing**: ffmpeg integration with librosa
 - **Beat Analysis**: librosa beat tracking and quantization
 - **Testing**: pytest with comprehensive coverage
-- **Metrics**: Prometheus-compatible metrics export
 
 ## 📈 Performance
 
@@ -246,8 +229,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Ready for production use!** 🚀
 
-**Total Issues Completed**: 14/24 (58% completion rate)  
-**Epic Coverage**: A, B, F, E1, G1  
+**Total Issues Completed**: 13/24 (54% completion rate)  
+**Epic Coverage**: A, B, F, E1  
 **Test Coverage**: Comprehensive unit, integration, and performance tests  
 **Production Ready**: ✅ Yes  
 **Repository Status**: ✅ Clean and optimized
