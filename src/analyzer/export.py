@@ -12,6 +12,7 @@ from typing import Dict, Any, List
 import numpy as np
 
 from .config import Config
+from .schema import JSONSchemaValidator
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,9 @@ class ResultExporter:
         
         # Export to JSON
         json_path = self._export_json(segments, audio_data)
+        
+        # Validate exported files
+        self._validate_exports(json_path, csv_path)
         
         logger.info(f"Results exported to {csv_path} and {json_path}")
         
@@ -164,3 +168,20 @@ class ResultExporter:
         
         logger.info(f"JSON exported to {json_path}")
         return json_path
+    
+    def _validate_exports(self, json_path: Path, csv_path: Path) -> None:
+        """
+        Validate exported files against schema.
+        
+        Args:
+            json_path: Path to JSON file
+            csv_path: Path to CSV file
+        """
+        try:
+            validator = JSONSchemaValidator()
+            if validator.validate_cli_output(json_path, csv_path):
+                logger.debug("Export validation successful")
+            else:
+                logger.warning("Export validation failed")
+        except Exception as e:
+            logger.warning(f"Export validation error: {e}")

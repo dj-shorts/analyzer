@@ -1,0 +1,179 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://dj-shorts.analyzer/schemas/analysis-result.json",
+  "title": "MVP Analyzer Analysis Result",
+  "description": "Schema for validating MVP Analyzer output JSON files",
+  "type": "object",
+  "required": ["metadata", "clips", "summary"],
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "required": ["version", "created_at", "input_file", "audio_duration", "sample_rate", "configuration"],
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "Schema version"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp when analysis was performed"
+        },
+        "input_file": {
+          "type": "string",
+          "description": "Path to the input video file"
+        },
+        "audio_duration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Duration of extracted audio in seconds"
+        },
+        "sample_rate": {
+          "type": "integer",
+          "minimum": 8000,
+          "maximum": 48000,
+          "description": "Audio sample rate in Hz"
+        },
+        "configuration": {
+          "type": "object",
+          "required": ["clips_count", "min_clip_length", "max_clip_length", "pre_roll", "peak_spacing", "with_motion", "align_to_beat", "seed_timestamps"],
+          "properties": {
+            "clips_count": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "Number of clips to extract"
+            },
+            "min_clip_length": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Minimum clip length in seconds"
+            },
+            "max_clip_length": {
+              "type": "number",
+              "minimum": 0.1,
+              "description": "Maximum clip length in seconds"
+            },
+            "pre_roll": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Pre-roll time in seconds"
+            },
+            "peak_spacing": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Minimum spacing between peaks in frames"
+            },
+            "with_motion": {
+              "type": "boolean",
+              "description": "Whether motion analysis was enabled"
+            },
+            "align_to_beat": {
+              "type": "boolean",
+              "description": "Whether beat alignment was enabled"
+            },
+            "seed_timestamps": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              },
+              "description": "Seed timestamps for peak detection"
+            }
+          }
+        }
+      }
+    },
+    "clips": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "required": ["clip_id", "start", "end", "center", "score", "seed_based", "aligned", "length"],
+        "properties": {
+          "clip_id": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Unique identifier for the clip"
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Start time of the clip in seconds"
+          },
+          "end": {
+            "type": "number",
+            "minimum": 0,
+            "description": "End time of the clip in seconds"
+          },
+          "center": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Center time of the clip in seconds"
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Novelty score of the clip (0-1)"
+          },
+          "seed_based": {
+            "type": "boolean",
+            "description": "Whether this clip was based on seed timestamps"
+          },
+          "aligned": {
+            "type": "boolean",
+            "description": "Whether this clip was aligned to beat boundaries"
+          },
+          "length": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Length of the clip in seconds"
+          }
+        }
+      },
+      "description": "Array of detected clips"
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_clips", "seed_based_clips", "auto_detected_clips", "average_score", "total_duration", "coverage_percentage"],
+      "properties": {
+        "total_clips": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of clips generated"
+        },
+        "seed_based_clips": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of clips based on seed timestamps"
+        },
+        "auto_detected_clips": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of automatically detected clips"
+        },
+        "average_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Average novelty score of all clips"
+        },
+        "total_duration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total duration of all clips in seconds"
+        },
+        "coverage_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Percentage of original video covered by clips"
+        }
+      },
+      "description": "Summary statistics of the analysis"
+    }
+  },
+  "additionalProperties": false
+}
