@@ -20,8 +20,9 @@ class NoveltyDetector:
     def __init__(self, config: Config):
         """Initialize novelty detector with configuration."""
         self.config = config
-        self.hop_length = 512
-        self.window_size = 2048
+        # Optimized STFT parameters based on performance testing (Epic F3)
+        self.hop_length = 1024  # Optimized for performance
+        self.window_size = 4096  # Optimized for performance
     
     def compute_novelty(self, audio_data: Dict[str, Any]) -> Dict[str, Any]:
         """
