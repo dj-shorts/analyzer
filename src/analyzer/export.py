@@ -12,6 +12,7 @@ from typing import Dict, Any, List
 import numpy as np
 
 from .config import Config
+from .schema import validate_output
 
 logger = logging.getLogger(__name__)
 
@@ -104,36 +105,22 @@ class ResultExporter:
         """
         json_path = self.config.output_json
         
-        # Prepare JSON data structure
+        # Prepare JSON data structure according to schema
         json_data = {
-            "metadata": {
-                "version": "1.0.0",
-                "created_at": datetime.now().isoformat(),
-                "input_file": str(self.config.input_path),
-                "audio_duration": audio_data.get("duration", 0),
-                "sample_rate": audio_data.get("sample_rate", 0),
-                "configuration": {
-                    "clips_count": self.config.clips_count,
-                    "min_clip_length": self.config.min_clip_length,
-                    "max_clip_length": self.config.max_clip_length,
-                    "pre_roll": self.config.pre_roll,
-                    "peak_spacing": self.config.peak_spacing,
-                    "with_motion": self.config.with_motion,
-                    "align_to_beat": self.config.align_to_beat,
-                    "seed_timestamps": self.config.seed_timestamps
-                }
-            },
+            "version": "1.0.0",
             "clips": segments,
-            "summary": {
-                "total_clips": len(segments),
-                "seed_based_clips": sum(1 for s in segments if s['seed_based']),
-                "auto_detected_clips": sum(1 for s in segments if not s['seed_based']),
-                "average_score": np.mean([s['score'] for s in segments]) if segments else 0,
-                "total_duration": sum(s['length'] for s in segments),
-                "coverage_percentage": (
-                    sum(s['length'] for s in segments) / audio_data.get("duration", 1) * 100
-                    if audio_data.get("duration", 0) > 0 else 0
-                )
+            "metadata": {
+                "input_file": str(self.config.input_path),
+                "total_duration": audio_data.get("duration", 0),
+                "clips_count": len(segments),
+                "analysis_time": audio_data.get("analysis_time", 0),
+                "with_motion": self.config.with_motion,
+                "align_to_beat": self.config.align_to_beat,
+                "export_video": self.config.export_video,
+                "export_format": self.config.export_format,
+                "auto_reframe": self.config.auto_reframe,
+                "tempo_confidence": audio_data.get("tempo_confidence", 0.0),
+                "novelty_peaks_count": audio_data.get("novelty_peaks_count", 0)
             }
         }
         
@@ -157,6 +144,12 @@ class ResultExporter:
                 return convert_numpy_types(data)
         
         json_data = recursive_convert(json_data)
+        
+        # Validate against schema
+        validation_errors = validate_output(json_data)
+        if validation_errors:
+            logger.warning(f"JSON validation errors: {validation_errors}")
+            # Continue anyway, but log the errors
         
         # Write JSON file
         with open(json_path, 'w', encoding='utf-8') as jsonfile:
