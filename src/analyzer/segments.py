@@ -19,12 +19,13 @@ class SegmentBuilder:
         """Initialize segment builder with configuration."""
         self.config = config
     
-    def build_segments(self, peaks_data: Dict[str, Any]) -> Dict[str, Any]:
+    def build_segments(self, peaks_data: Dict[str, Any], audio_duration: float = None) -> Dict[str, Any]:
         """
         Build segments from peak information.
         
         Args:
             peaks_data: Dict containing peak times, scores, and metadata
+            audio_duration: Total duration of the audio in seconds (optional)
             
         Returns:
             Dict containing segment information
@@ -54,15 +55,26 @@ class SegmentBuilder:
             # Calculate end time
             end_time = start_time + segment_length
             
+            # Ensure segment doesn't exceed audio duration
+            if audio_duration is not None:
+                end_time = min(end_time, audio_duration)
+                # Recalculate start time if needed to maintain segment length
+                if end_time - start_time < self.config.min_clip_length:
+                    # If segment is too short, adjust start time
+                    start_time = max(0, end_time - self.config.min_clip_length)
+            
+            # Recalculate actual segment length after adjustments
+            actual_length = end_time - start_time
+            
             segment = {
                 "clip_id": i + 1,
-                "start": start_time,
-                "end": end_time,
-                "center": center_time,
-                "score": float(score),
+                "start": round(start_time, 3),
+                "end": round(end_time, 3),
+                "center": round(center_time, 3),
+                "score": round(float(score), 3),
                 "seed_based": bool(is_seed),
                 "aligned": False,  # Will be set to True in beat alignment step
-                "length": segment_length
+                "length": round(actual_length, 3)
             }
             
             segments.append(segment)

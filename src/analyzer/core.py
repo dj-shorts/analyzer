@@ -53,7 +53,7 @@ class Analyzer:
             
             # Step 4: Build segments
             logger.info("Step 4: Building segments")
-            segments = self.segment_builder.build_segments(peaks)
+            segments = self.segment_builder.build_segments(peaks, audio_data["duration"])
             
             # Step 5: Export results
             logger.info("Step 5: Exporting results")
