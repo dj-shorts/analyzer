@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Tuple, Dict, Any
 
-# import librosa  # Will be added in Issue A2
+import librosa
 import numpy as np
 
 from .config import Config
@@ -45,13 +45,8 @@ class AudioExtractor:
             # Extract audio using ffmpeg
             self._extract_with_ffmpeg(self.config.input_path, temp_wav_path)
             
-            # Load audio with numpy (temporary implementation)
-            # TODO: Replace with librosa in Issue A2
-            import wave
-            with wave.open(str(temp_wav_path), 'rb') as wav_file:
-                frames = wav_file.readframes(-1)
-                audio_data = np.frombuffer(frames, dtype=np.int16).astype(np.float32) / 32768.0
-                sr = wav_file.getframerate()
+            # Load audio with librosa
+            audio_data, sr = librosa.load(str(temp_wav_path), sr=self.sample_rate, mono=True)
             
             # Get audio duration
             duration = len(audio_data) / sr
