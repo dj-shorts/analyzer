@@ -78,7 +78,7 @@ class Analyzer:
                 if hasattr(self, 'progress_emitter'):
                     self.progress_emitter.start_stage(AnalysisStage.MOTION_ANALYSIS)
                 logger.info("Step 2: Motion analysis")
-                motion_data = self.motion_detector.analyze_motion(self.config.input_path)
+                motion_data = self.motion_detector.extract_motion_features(self.config.input_path)
                 if hasattr(self, 'progress_emitter'):
                     self.progress_emitter.complete_stage(AnalysisStage.MOTION_ANALYSIS)
             
