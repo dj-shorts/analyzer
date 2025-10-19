@@ -1,131 +1,59 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "created_at": "2025-10-19T15:13:19.881485",
+    "created_at": "2025-10-19T17:05:09.259875",
     "input_file": "test_video.mp4",
     "audio_duration": 125.95201814058957,
     "sample_rate": 22050,
     "configuration": {
-      "clips_count": 6,
+      "clips_count": 3,
       "min_clip_length": 15.0,
       "max_clip_length": 30.0,
       "pre_roll": 10.0,
       "peak_spacing": 80,
-      "with_motion": false,
-      "align_to_beat": true,
+      "with_motion": true,
+      "align_to_beat": false,
       "seed_timestamps": []
     }
   },
   "clips": [
     {
       "clip_id": 1,
-      "start": 44.00181405895693,
-      "end": 67.40752834467122,
-      "center": 54.102494331065756,
-      "score": 0.7410144805908203,
+      "start": 17.213786848072562,
+      "end": 42.105984945210736,
+      "center": 27.213786848072562,
+      "score": 0.6594798731425451,
       "seed_based": false,
       "aligned": false,
-      "length": 23.405714285714286,
-      "aligned_to_beat": true,
-      "beat_confidence": [
-        0.9494281981702887
-      ],
-      "original_start": 44.102494331065756,
-      "original_duration": 26.115217208862305,
-      "bars": 192
+      "length": 24.892198097138177
     },
     {
       "clip_id": 2,
-      "start": 45.46467120181408,
-      "end": 68.87038548752837,
-      "center": 55.635011337868484,
-      "score": 0.7635299563407898,
+      "start": 46.26195011337869,
+      "end": 70.9742245828051,
+      "center": 56.26195011337869,
+      "score": 0.6474849646284283,
       "seed_based": false,
       "aligned": false,
-      "length": 23.405714285714286,
-      "aligned_to_beat": true,
-      "beat_confidence": [
-        0.9494281981702887
-      ],
-      "original_start": 45.635011337868484,
-      "original_duration": 26.452949345111847,
-      "bars": 192
+      "length": 24.712274469426426
     },
     {
       "clip_id": 3,
-      "start": 59.11800453514741,
-      "end": 82.5237188208617,
-      "center": 69.31156462585034,
-      "score": 0.7844916582107544,
+      "start": 91.58730158730158,
+      "end": 117.55111559911498,
+      "center": 101.58730158730158,
+      "score": 0.730920934120893,
       "seed_based": false,
       "aligned": false,
-      "length": 23.405714285714286,
-      "aligned_to_beat": true,
-      "beat_confidence": [
-        0.9494281981702887
-      ],
-      "original_start": 59.31156462585034,
-      "original_duration": 26.767374873161316,
-      "bars": 192
-    },
-    {
-      "clip_id": 4,
-      "start": 88.86276643990934,
-      "end": 112.26848072562362,
-      "center": 99.1027664399093,
-      "score": 0.7432888150215149,
-      "seed_based": false,
-      "aligned": false,
-      "length": 23.405714285714286,
-      "aligned_to_beat": true,
-      "beat_confidence": [
-        0.9494281981702887
-      ],
-      "original_start": 89.1027664399093,
-      "original_duration": 26.149332225322723,
-      "bars": 192
-    },
-    {
-      "clip_id": 5,
-      "start": 91.30086167800458,
-      "end": 122.50848072562363,
-      "center": 101.65696145124717,
-      "score": 0.9063289761543274,
-      "seed_based": false,
-      "aligned": false,
-      "length": 31.207619047619048,
-      "aligned_to_beat": true,
-      "beat_confidence": [
-        0.9494281981702887
-      ],
-      "original_start": 91.65696145124717,
-      "original_duration": 28.59493464231491,
-      "bars": 256
-    },
-    {
-      "clip_id": 6,
-      "start": 112.26848072562363,
-      "end": 135.67419501133793,
-      "center": 122.53170068027211,
-      "score": 0.6878031492233276,
-      "seed_based": false,
-      "aligned": false,
-      "length": 23.405714285714286,
-      "aligned_to_beat": true,
-      "beat_confidence": [
-        0.9494281981702887
-      ],
-      "original_start": 112.53170068027211,
-      "original_duration": 25.317047238349915,
-      "bars": 192
+      "length": 25.963814011813394
     }
   ],
   "summary": {
-    "total_clips": 6,
+    "total_clips": 3,
     "seed_based_clips": 0,
-    "auto_detected_clips": 6,
-    "average_score": 0.7710761725902557,
-    "total_duration": 148.23619047619047,
-    "coverage_percentage": 117.69258854647885
+    "auto_detected_clips": 3,
+    "average_score": 0.6792952572972887,
+    "total_duration": 75.568286578378,
+    "coverage_percentage": 59.997678238095006
   }
 }
