@@ -42,23 +42,13 @@ class PeakPicker:
         # Convert spacing to frames (approximate)
         spacing_frames = int(self.config.peak_spacing * sr / hop_length / 1000)  # Convert ms to frames
         
-        # Find peaks using simple peak detection
-        peaks = self._find_peaks_simple(novelty_scores, spacing_frames, prominence=0.1)
+        # Find all potential peaks first
+        all_peaks = self._find_all_peaks(novelty_scores, prominence=0.1)
         
-        # Get top-K peaks by score
-        if len(peaks) > 0:
-            peak_scores = novelty_scores[peaks]
-            top_k_indices = np.argsort(peak_scores)[-self.config.clips_count:]
-            top_peaks = peaks[top_k_indices]
-            top_scores = peak_scores[top_k_indices]
-            
-            # Sort by time
-            sort_indices = np.argsort(top_peaks)
-            top_peaks = top_peaks[sort_indices]
-            top_scores = top_scores[sort_indices]
-        else:
-            top_peaks = np.array([])
-            top_scores = np.array([])
+        # Apply greedy top-K selection with spacing constraint
+        top_peaks, top_scores = self._greedy_top_k_selection(
+            all_peaks, novelty_scores, self.config.clips_count, spacing_frames
+        )
         
         # Convert frame indices to time
         peak_times = time_axis[top_peaks] if len(top_peaks) > 0 else np.array([])
@@ -74,7 +64,7 @@ class PeakPicker:
             "peak_times": final_peaks,
             "peak_scores": final_scores,
             "seed_based": seed_flags,
-            "total_peaks_found": len(peaks),
+            "total_peaks_found": len(all_peaks),
             "spacing_frames": spacing_frames
         }
     
@@ -186,3 +176,94 @@ class PeakPicker:
                         peaks.append(i)
         
         return np.array(peaks)
+    
+    def _find_all_peaks(self, signal: np.ndarray, prominence: float = 0.1) -> np.ndarray:
+        """
+        Find all local maxima without spacing constraint.
+        
+        Args:
+            signal: Input signal
+            prominence: Minimum prominence for peak detection
+            
+        Returns:
+            Array of all peak indices
+        """
+        peaks = []
+        n = len(signal)
+        
+        # Find all local maxima
+        for i in range(1, n - 1):
+            # Check if it's a local maximum
+            if signal[i] > signal[i-1] and signal[i] > signal[i+1]:
+                # Check prominence (simplified - just check if above threshold)
+                if signal[i] > prominence:
+                    peaks.append(i)
+        
+        return np.array(peaks)
+    
+    def _greedy_top_k_selection(
+        self, 
+        all_peaks: np.ndarray, 
+        novelty_scores: np.ndarray, 
+        k: int, 
+        min_spacing: int
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Greedy selection of top-K peaks with minimum spacing constraint.
+        
+        Args:
+            all_peaks: Array of all peak indices
+            novelty_scores: Novelty scores array
+            k: Number of peaks to select
+            min_spacing: Minimum spacing between peaks (in frames)
+            
+        Returns:
+            Tuple of (selected_peak_indices, selected_scores)
+        """
+        if len(all_peaks) == 0:
+            return np.array([]), np.array([])
+        
+        # Get scores for all peaks
+        peak_scores = novelty_scores[all_peaks]
+        
+        # Sort peaks by score (descending)
+        sorted_indices = np.argsort(peak_scores)[::-1]
+        
+        selected_peaks = []
+        selected_scores = []
+        
+        # Greedy selection: pick peaks one by one, ensuring spacing constraint
+        for idx in sorted_indices:
+            peak_idx = all_peaks[idx]
+            peak_score = peak_scores[idx]
+            
+            # Check if this peak is far enough from already selected peaks
+            too_close = False
+            for selected_peak in selected_peaks:
+                if abs(peak_idx - selected_peak) < min_spacing:
+                    too_close = True
+                    break
+            
+            # If not too close, add this peak
+            if not too_close:
+                selected_peaks.append(peak_idx)
+                selected_scores.append(peak_score)
+                
+                # Stop when we have enough peaks
+                if len(selected_peaks) >= k:
+                    break
+        
+        # Convert to numpy arrays and sort by time
+        if selected_peaks:
+            selected_peaks = np.array(selected_peaks)
+            selected_scores = np.array(selected_scores)
+            
+            # Sort by time (peak index)
+            sort_indices = np.argsort(selected_peaks)
+            selected_peaks = selected_peaks[sort_indices]
+            selected_scores = selected_scores[sort_indices]
+        else:
+            selected_peaks = np.array([])
+            selected_scores = np.array([])
+        
+        return selected_peaks, selected_scores
