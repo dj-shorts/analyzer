@@ -36,26 +36,20 @@ class NoveltyDetector:
         audio = audio_data["audio"]
         sr = audio_data["sample_rate"]
         
-        # TODO: Implement proper onset strength and spectral contrast in Issue A3
-        # For now, create a simple novelty measure based on audio energy changes
+        # Compute onset strength (proxy for spectral flux)
+        onset_strength = self._compute_onset_strength(audio, sr)
         
-        # Simple energy-based novelty (temporary implementation)
-        hop_samples = self.hop_length
-        frames = []
-        
-        for i in range(0, len(audio) - hop_samples, hop_samples):
-            frame = audio[i:i + hop_samples]
-            energy = np.mean(frame ** 2)
-            frames.append(energy)
-        
-        energy_frames = np.array(frames)
-        
-        # Compute energy differences as novelty measure
-        energy_diff = np.abs(np.diff(energy_frames, prepend=energy_frames[0]))
-        
-        # Normalize and smooth
-        onset_norm = self._robust_normalize(energy_diff)
-        contrast_norm = self._robust_normalize(energy_frames)
+        # Compute spectral contrast variance
+        spectral_contrast_var = self._compute_spectral_contrast_variance(audio, sr)
+
+        # Ensure both arrays have the same length (onset_strength is shorter by 1 due to diff)
+        min_length = min(len(onset_strength), len(spectral_contrast_var))
+        onset_strength = onset_strength[:min_length]
+        spectral_contrast_var = spectral_contrast_var[:min_length]
+
+        # Robust normalization
+        onset_norm = self._robust_normalize(onset_strength)
+        contrast_norm = self._robust_normalize(spectral_contrast_var)
         
         # Combine features
         novelty_scores = 0.7 * onset_norm + 0.3 * contrast_norm
@@ -128,3 +122,98 @@ class NoveltyDetector:
         smoothed = np.convolve(signal, kernel, mode='same')
         
         return smoothed
+    
+    def _compute_onset_strength(self, audio: np.ndarray, sr: int) -> np.ndarray:
+        """
+        Compute onset strength as a proxy for spectral flux.
+        
+        Args:
+            audio: Input audio signal
+            sr: Sample rate
+            
+        Returns:
+            Onset strength time series
+        """
+        # Compute Short-Time Fourier Transform
+        stft = self._compute_stft(audio)
+        
+        # Compute spectral flux (magnitude differences between consecutive frames)
+        magnitude = np.abs(stft)
+        
+        # Compute differences between consecutive frames
+        flux = np.diff(magnitude, axis=1)
+        
+        # Only keep positive differences (increases in magnitude)
+        flux = np.maximum(flux, 0)
+        
+        # Sum across frequency bins to get onset strength
+        onset_strength = np.sum(flux, axis=0)
+        
+        return onset_strength
+    
+    def _compute_spectral_contrast_variance(self, audio: np.ndarray, sr: int) -> np.ndarray:
+        """
+        Compute spectral contrast variance across time.
+        
+        Args:
+            audio: Input audio signal
+            sr: Sample rate
+            
+        Returns:
+            Spectral contrast variance time series
+        """
+        # Compute Short-Time Fourier Transform
+        stft = self._compute_stft(audio)
+        magnitude = np.abs(stft)
+        
+        # Compute spectral contrast for each frame
+        # Divide spectrum into frequency bands and compute contrast
+        n_bins = magnitude.shape[0]
+        
+        # Define frequency bands (low, mid, high)
+        low_band = magnitude[:n_bins//3, :]
+        mid_band = magnitude[n_bins//3:2*n_bins//3, :]
+        high_band = magnitude[2*n_bins//3:, :]
+        
+        # Compute mean energy in each band
+        low_energy = np.mean(low_band, axis=0)
+        mid_energy = np.mean(mid_band, axis=0)
+        high_energy = np.mean(high_band, axis=0)
+        
+        # Compute contrast as variance of band energies
+        band_energies = np.vstack([low_energy, mid_energy, high_energy])
+        contrast_variance = np.var(band_energies, axis=0)
+        
+        return contrast_variance
+    
+    def _compute_stft(self, audio: np.ndarray) -> np.ndarray:
+        """
+        Compute Short-Time Fourier Transform.
+        
+        Args:
+            audio: Input audio signal
+            
+        Returns:
+            STFT matrix
+        """
+        # Simple STFT implementation
+        n_fft = self.window_size
+        hop_length = self.hop_length
+        
+        # Pad audio to ensure we can compute frames
+        audio_padded = np.pad(audio, (0, n_fft), mode='constant')
+        
+        # Compute frames
+        frames = []
+        for i in range(0, len(audio_padded) - n_fft + 1, hop_length):
+            frame = audio_padded[i:i + n_fft]
+            # Apply window (Hanning window)
+            windowed = frame * np.hanning(n_fft)
+            frames.append(windowed)
+        
+        # Convert to numpy array and compute FFT
+        frames_array = np.array(frames).T
+        stft = np.fft.fft(frames_array, n=n_fft, axis=0)
+        
+        # Return only positive frequencies
+        return stft[:n_fft//2 + 1, :]

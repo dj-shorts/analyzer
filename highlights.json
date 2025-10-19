@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "created_at": "2025-10-19T14:12:35.834261",
+    "created_at": "2025-10-19T14:18:56.800281",
     "input_file": "test_video.mp4",
     "audio_duration": 125.95201814058957,
     "sample_rate": 22050,
@@ -19,41 +19,41 @@
   "clips": [
     {
       "clip_id": 1,
-      "start": 45.61179138321995,
-      "end": 73.1292521594468,
-      "center": 55.61179138321995,
-      "score": 0.8344973850817906,
+      "start": 44.474013605442174,
+      "end": 73.64537279389702,
+      "center": 54.474013605442174,
+      "score": 0.9447572792303236,
       "seed_based": false,
       "aligned": false,
-      "length": 27.51746077622686
+      "length": 29.171359188454854
     },
     {
       "clip_id": 2,
-      "start": 91.6105215419501,
-      "end": 120.88949747999779,
-      "center": 101.6105215419501,
-      "score": 0.9519317292031788,
+      "start": 91.56408163265306,
+      "end": 120.64968892623772,
+      "center": 101.56408163265306,
+      "score": 0.9390404862389775,
       "seed_based": false,
       "aligned": false,
-      "length": 29.278975938047683
+      "length": 29.085607293584662
     },
     {
       "clip_id": 3,
-      "start": 91.6801814058957,
-      "end": 120.41361014384262,
-      "center": 101.6801814058957,
-      "score": 0.9155619158631279,
+      "start": 112.48526077097506,
+      "end": 141.58017828816375,
+      "center": 122.48526077097506,
+      "score": 0.9396611678125788,
       "seed_based": false,
       "aligned": false,
-      "length": 28.733428737946916
+      "length": 29.094917517188684
     }
   ],
   "summary": {
     "total_clips": 3,
     "seed_based_clips": 0,
     "auto_detected_clips": 3,
-    "average_score": 0.9006636767160324,
-    "total_duration": 85.52986545222146,
-    "coverage_percentage": 67.90670504124175
+    "average_score": 0.9411529777606266,
+    "total_duration": 87.35188399922819,
+    "coverage_percentage": 69.35330238355107
   }
 }
