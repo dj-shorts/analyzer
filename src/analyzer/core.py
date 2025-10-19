@@ -70,7 +70,7 @@ class Analyzer:
             
             # Complete audio extraction stage
             if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage()
+                self.progress_emitter.complete_stage(AnalysisStage.AUDIO_EXTRACTION)
             
             # Step 2: Motion analysis (if enabled)
             motion_data = None
@@ -80,7 +80,7 @@ class Analyzer:
                 logger.info("Step 2: Motion analysis")
                 motion_data = self.motion_detector.analyze_motion(self.config.input_path)
                 if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.complete_stage()
+                    self.progress_emitter.complete_stage(AnalysisStage.MOTION_ANALYSIS)
             
             # Step 3: Beat tracking (if enabled)
             beat_data = None
@@ -90,7 +90,7 @@ class Analyzer:
                 logger.info("Step 3: Beat tracking and BPM estimation")
                 beat_data = self.beat_tracker.track_beats(audio_data)
                 if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.complete_stage()
+                    self.progress_emitter.complete_stage(AnalysisStage.BEAT_TRACKING)
             
             # Step 4: Compute novelty scores
             if hasattr(self, 'progress_emitter'):
@@ -98,7 +98,7 @@ class Analyzer:
             logger.info("Step 4: Computing novelty scores")
             novelty_scores = self.novelty_detector.compute_novelty(audio_data)
             if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage()
+                self.progress_emitter.complete_stage(AnalysisStage.NOVELTY_DETECTION)
             
             # Step 5: Find peaks
             if hasattr(self, 'progress_emitter'):
@@ -106,7 +106,7 @@ class Analyzer:
             logger.info("Step 5: Finding peaks")
             peaks = self.peak_picker.find_peaks(novelty_scores)
             if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage()
+                self.progress_emitter.complete_stage(AnalysisStage.PEAK_DETECTION)
             
             # Step 6: Build segments
             if hasattr(self, 'progress_emitter'):
@@ -114,7 +114,7 @@ class Analyzer:
             logger.info("Step 6: Building segments")
             segments = self.segment_builder.build_segments(peaks)
             if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage()
+                self.progress_emitter.complete_stage(AnalysisStage.SEGMENT_BUILDING)
             
             # Step 7: Beat quantization (if enabled)
             if self.config.align_to_beat and beat_data:
@@ -127,7 +127,7 @@ class Analyzer:
             logger.info("Step 8: Exporting results")
             results = self.result_exporter.export(segments, audio_data)
             if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage()
+                self.progress_emitter.complete_stage(AnalysisStage.RESULT_EXPORT)
             
             # Step 9: Video export (if enabled)
             if hasattr(self, 'video_exporter'):
@@ -137,7 +137,7 @@ class Analyzer:
                 video_results = self.video_exporter.export_clips(segments)
                 results["video_export"] = video_results
                 if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.complete_stage()
+                    self.progress_emitter.complete_stage(AnalysisStage.VIDEO_EXPORT)
             
             # Add motion data to results if available
             if motion_data:
@@ -150,7 +150,7 @@ class Analyzer:
             # Complete analysis
             if hasattr(self, 'progress_emitter'):
                 self.progress_emitter.start_stage(AnalysisStage.COMPLETION)
-                self.progress_emitter.complete_stage()
+                self.progress_emitter.complete_stage(AnalysisStage.COMPLETION)
             
             logger.info("Analysis pipeline completed successfully")
             return results
