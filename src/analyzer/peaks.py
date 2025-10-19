@@ -40,8 +40,8 @@ class PeakPicker:
         sr = novelty_data.get("sample_rate", 22050)
         hop_length = novelty_data.get("hop_length", 512)
         
-        # Convert spacing to frames (approximate)
-        spacing_frames = int(self.config.peak_spacing * sr / hop_length / 1000)  # Convert ms to frames
+        # Convert spacing from frames to samples
+        spacing_frames = int(self.config.peak_spacing * hop_length / sr)
         
         # Find peaks using scipy
         peaks, properties = find_peaks(
@@ -143,7 +143,9 @@ class PeakPicker:
             # Check if this peak conflicts with any seed-based peak
             conflicts = False
             for seed_peak in final_peaks:
-                if abs(peak_time - seed_peak) < self.config.peak_spacing / 1000:  # Convert to seconds
+                # Convert spacing from frames to seconds
+                spacing_seconds = self.config.peak_spacing * hop_length / sr
+                if abs(peak_time - seed_peak) < spacing_seconds:
                     conflicts = True
                     break
             
