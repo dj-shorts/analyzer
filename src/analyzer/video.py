@@ -480,7 +480,7 @@ class VideoExporter:
         # Join filters
         filter_string = ",".join(filter_parts)
         
-        return f"[0:v]{filter_string}[v]"
+        return filter_string
 
     def _build_auto_reframe_filter(self, input_path: Path, start_time: float, duration: float, format_config: Dict[str, Any]) -> str:
         """

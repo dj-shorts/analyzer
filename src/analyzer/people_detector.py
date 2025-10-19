@@ -216,6 +216,9 @@ class PeopleDetector:
             crop_height = input_height
             crop_width = int(input_height * target_aspect)
             
+            # Clamp crop dimensions to input dimensions
+            crop_width = min(crop_width, input_width)
+            
             # Center crop horizontally around detected people
             crop_x = max(0, min(input_width - crop_width, int(center_x - crop_width / 2)))
             crop_y = 0
@@ -223,6 +226,9 @@ class PeopleDetector:
             # Target is taller - crop width
             crop_width = input_width
             crop_height = int(input_width / target_aspect)
+            
+            # Clamp crop dimensions to input dimensions
+            crop_height = min(crop_height, input_height)
             
             # Center crop vertically
             crop_x = 0

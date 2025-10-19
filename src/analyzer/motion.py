@@ -58,10 +58,17 @@ class MotionDetector:
                 logger.error(f"Could not open video file: {video_path}")
                 return self._create_fallback_motion_data()
             
-            # Get video properties
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            duration = total_frames / fps if fps > 0 else 0
+                    # Get video properties
+                    fps = cap.get(cv2.CAP_PROP_FPS)
+                    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                    
+                    # Check for zero FPS (common in some containers)
+                    if fps <= 0:
+                        logger.warning(f"Invalid FPS ({fps}), using fallback motion data")
+                        cap.release()
+                        return self._create_fallback_motion_data()
+                    
+                    duration = total_frames / fps
             
             logger.info(f"Video properties: {fps:.2f} fps, {total_frames} frames, {duration:.2f}s")
             
