@@ -29,6 +29,10 @@ class Config(BaseModel):
     with_motion: bool = Field(default=False, description="Include motion analysis")
     align_to_beat: bool = Field(default=False, description="Align clips to beat boundaries")
     
+    # Video export parameters
+    export_video: bool = Field(default=False, description="Export video clips")
+    export_dir: Path = Field(default=Path("clips"), description="Directory for exported video clips")
+    
     # Seed timestamps (in seconds)
     seed_timestamps: List[float] = Field(default_factory=list, description="Seed timestamps for peak detection")
     
