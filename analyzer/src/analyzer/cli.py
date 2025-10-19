@@ -116,6 +116,12 @@ def setup_logging(verbose: bool = False) -> None:
     default="clips",
     help="Directory for exported video clips (default: clips)"
 )
+@click.option(
+    "--export-format",
+    type=click.Choice(["original", "vertical", "square"]),
+    default="original",
+    help="Export format: original (16:9), vertical (9:16), or square (1:1) (default: original)"
+)
 def main(
     input: Path,
     clips: int,
@@ -133,6 +139,7 @@ def main(
     ram_limit: Optional[str],
     export_video: bool,
     export_dir: Path,
+    export_format: str,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -170,6 +177,7 @@ def main(
             align_to_beat=align_to_beat,
             export_video=export_video,
             export_dir=export_dir,
+            export_format=export_format,
             seed_timestamps=seed_timestamps,
             output_json=out_json,
             output_csv=out_csv,
@@ -191,6 +199,7 @@ def main(
         console.print(f"  • Video export: {'Yes' if export_video else 'No'}")
         if export_video:
             console.print(f"  • Export directory: {export_dir}")
+            console.print(f"  • Export format: {export_format}")
         if seed_timestamps:
             console.print(f"  • Seeds: {len(seed_timestamps)} timestamps")
         

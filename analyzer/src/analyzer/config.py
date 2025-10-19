@@ -32,6 +32,7 @@ class Config(BaseModel):
     # Video export parameters
     export_video: bool = Field(default=False, description="Export video clips")
     export_dir: Path = Field(default=Path("clips"), description="Directory for exported video clips")
+    export_format: str = Field(default="original", description="Export format: original, vertical, or square")
     
     # Seed timestamps (in seconds)
     seed_timestamps: List[float] = Field(default_factory=list, description="Seed timestamps for peak detection")
@@ -55,6 +56,15 @@ class Config(BaseModel):
         for seed in v:
             if seed < 0:
                 raise ValueError("Seed timestamps must be positive")
+        return v
+    
+    @field_validator("export_format")
+    @classmethod
+    def export_format_must_be_valid(cls, v):
+        """Validate that export format is one of the supported formats."""
+        valid_formats = ["original", "vertical", "square"]
+        if v not in valid_formats:
+            raise ValueError(f"Export format must be one of: {', '.join(valid_formats)}")
         return v
     
     model_config = ConfigDict(

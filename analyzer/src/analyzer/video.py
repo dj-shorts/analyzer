@@ -22,6 +22,13 @@ class VideoExporter:
         """Initialize video exporter with configuration."""
         self.config = config
         
+        # Format definitions
+        self.formats = {
+            "original": {"width": None, "height": None, "crop": False},
+            "vertical": {"width": 1080, "height": 1920, "crop": True},  # 9:16
+            "square": {"width": 1080, "height": 1080, "crop": True}     # 1:1
+        }
+        
         # FFmpeg parameters for h264 transcoding
         self.h264_params = [
             "-c:v", "libx264",
@@ -63,8 +70,9 @@ class VideoExporter:
             
             logger.info(f"Exporting clip {clip_id}: {start_time:.2f}s - {end_time:.2f}s")
             
-            # Generate output filename
-            output_filename = f"clip_{clip_id:03d}_{start_time:.1f}s-{end_time:.1f}s.mp4"
+            # Generate output filename with format suffix
+            format_suffix = f"_{self.config.export_format}" if self.config.export_format != "original" else ""
+            output_filename = f"clip_{clip_id:03d}_{start_time:.1f}s-{end_time:.1f}s{format_suffix}.mp4"
             output_path = output_dir / output_filename
             
             try:
@@ -126,15 +134,20 @@ class VideoExporter:
         Returns:
             Dict containing export result and metadata
         """
-        # First, try stream copy for compatible codecs
-        stream_copy_result = self._try_stream_copy(input_path, output_path, start_time, end_time)
-        
-        if stream_copy_result["success"]:
-            return stream_copy_result
-        
-        # If stream copy fails, fallback to h264 transcoding
-        logger.info(f"Stream copy failed, falling back to h264 transcoding for {output_path.name}")
-        return self._transcode_to_h264(input_path, output_path, start_time, end_time)
+        # Check if format requires transcoding
+        if self.config.export_format == "original":
+            # For original format, try stream copy first
+            stream_copy_result = self._try_stream_copy(input_path, output_path, start_time, end_time)
+            
+            if stream_copy_result["success"]:
+                return stream_copy_result
+            
+            # If stream copy fails, fallback to h264 transcoding
+            logger.info(f"Stream copy failed, falling back to h264 transcoding for {output_path.name}")
+            return self._transcode_to_h264(input_path, output_path, start_time, end_time)
+        else:
+            # For non-original formats, use transcoding with format conversion
+            return self._transcode_with_format(input_path, output_path, start_time, end_time)
 
     def _try_stream_copy(self, input_path: Path, output_path: Path, start_time: float, end_time: float) -> Dict[str, Any]:
         """
@@ -342,3 +355,118 @@ class VideoExporter:
                     compatible["audio"] = True
         
         return compatible
+
+    def _transcode_with_format(self, input_path: Path, output_path: Path, start_time: float, end_time: float) -> Dict[str, Any]:
+        """
+        Transcode video with format conversion (vertical/square).
+        
+        Args:
+            input_path: Path to input video file
+            output_path: Path for output clip
+            start_time: Start time in seconds
+            end_time: End time in seconds
+            
+        Returns:
+            Dict containing export result
+        """
+        duration = end_time - start_time
+        format_config = self.formats[self.config.export_format]
+        
+        # Build FFmpeg command with format conversion
+        cmd = [
+            "ffmpeg",
+            "-y",  # Overwrite output files
+            "-ss", str(start_time),  # Start time
+            "-t", str(duration),  # Duration
+            "-i", str(input_path),  # Input file
+        ]
+        
+        # Add video filter for format conversion
+        if format_config["crop"]:
+            # Build crop and scale filter
+            filter_complex = self._build_crop_scale_filter(format_config)
+            cmd.extend(["-filter_complex", filter_complex])
+            cmd.extend(["-map", "[v]"])
+        else:
+            cmd.extend(self.h264_params)
+        
+        # Add audio codec parameters
+        cmd.extend(self.audio_params)
+        cmd.extend(["-avoid_negative_ts", "make_zero"])
+        cmd.append(str(output_path))
+        
+        try:
+            logger.debug(f"Running format conversion command: {' '.join(cmd)}")
+            
+            # Run FFmpeg command
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=600  # 10 minute timeout for transcoding
+            )
+            
+            if result.returncode == 0 and output_path.exists():
+                file_size = output_path.stat().st_size
+                return {
+                    "success": True,
+                    "method": f"format_conversion_{self.config.export_format}",
+                    "file_size": file_size
+                }
+            else:
+                error_msg = f"FFmpeg format conversion failed: {result.stderr}"
+                logger.error(f"Format conversion failed: {error_msg}")
+                return {
+                    "success": False,
+                    "error": error_msg
+                }
+                
+        except subprocess.TimeoutExpired:
+            error_msg = "FFmpeg format conversion timed out"
+            logger.error(error_msg)
+            return {
+                "success": False,
+                "error": error_msg
+            }
+        except Exception as e:
+            error_msg = f"Unexpected error in format conversion: {str(e)}"
+            logger.error(error_msg)
+            return {
+                "success": False,
+                "error": error_msg
+            }
+
+    def _build_crop_scale_filter(self, format_config: Dict[str, Any]) -> str:
+        """
+        Build FFmpeg filter for crop and scale operations.
+        
+        Args:
+            format_config: Format configuration dictionary
+            
+        Returns:
+            FFmpeg filter string
+        """
+        width = format_config["width"]
+        height = format_config["height"]
+        
+        # For vertical (9:16) and square (1:1) formats, we need to crop and scale
+        # Crop to center and scale to target dimensions
+        filter_parts = []
+        
+        # Crop to center (assuming 16:9 input)
+        # For 16:9 to 9:16: crop width to maintain aspect ratio
+        # For 16:9 to 1:1: crop both width and height
+        if self.config.export_format == "vertical":
+            # Crop to 9:16 aspect ratio from center
+            filter_parts.append("crop=ih*9/16:ih")
+        elif self.config.export_format == "square":
+            # Crop to square from center
+            filter_parts.append("crop=ih:ih")
+        
+        # Scale to target dimensions
+        filter_parts.append(f"scale={width}:{height}")
+        
+        # Join filters
+        filter_string = ",".join(filter_parts)
+        
+        return f"[0:v]{filter_string}[v]"
