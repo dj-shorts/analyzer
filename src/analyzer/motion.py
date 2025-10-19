@@ -7,9 +7,11 @@ Implements Epic C: Optical flow Farnebäck (3-4 fps) and mixing with audio score
 import logging
 from typing import Dict, Any, Tuple, Optional
 from pathlib import Path
+import time
 
 import numpy as np
 import cv2
+from tqdm import tqdm
 
 from .config import Config
 
@@ -74,6 +76,9 @@ class MotionDetector:
             
             # Calculate frame sampling interval for target fps
             frame_interval = max(1, int(fps / self.target_fps))
+            expected_processed_frames = total_frames // frame_interval
+            
+            logger.info(f"Processing motion analysis: sampling every {frame_interval} frames (~{expected_processed_frames} frames to process)")
             
             # Initialize optical flow variables
             prev_frame = None
@@ -82,41 +87,56 @@ class MotionDetector:
             
             frame_count = 0
             processed_count = 0
+            start_time = time.time()
             
-            while True:
-                ret, frame = cap.read()
-                if not ret:
-                    break
+            # Create progress bar
+            with tqdm(total=total_frames, desc="Motion Analysis", unit="frames", 
+                     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} frames [{elapsed}<{remaining}, {rate_fmt}]") as pbar:
                 
-                # Sample frames at target fps
-                if frame_count % frame_interval == 0:
-                    # Convert to grayscale
-                    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                while True:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
                     
-                    if prev_frame is not None:
-                        # Use Farnebäck method for dense optical flow
-                        flow_dense = cv2.calcOpticalFlowFarneback(
-                            prev_frame, gray, None,
-                            **self.flow_params
-                        )
+                    # Sample frames at target fps
+                    if frame_count % frame_interval == 0:
+                        # Convert to grayscale
+                        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                         
-                        # Calculate motion magnitude
-                        motion_magnitude = np.sqrt(
-                            flow_dense[..., 0]**2 + flow_dense[..., 1]**2
-                        )
+                        if prev_frame is not None:
+                            # Use Farnebäck method for dense optical flow
+                            flow_dense = cv2.calcOpticalFlowFarneback(
+                                prev_frame, gray, None,
+                                **self.flow_params
+                            )
+                            
+                            # Calculate motion magnitude
+                            motion_magnitude = np.sqrt(
+                                flow_dense[..., 0]**2 + flow_dense[..., 1]**2
+                            )
+                            
+                            # Calculate median motion score
+                            motion_score = np.median(motion_magnitude)
+                            
+                            motion_scores.append(motion_score)
+                            frame_times.append(frame_count / fps)
+                            processed_count += 1
+                            
+                            # Update progress bar with motion score info
+                            pbar.set_postfix({
+                                'motion': f'{motion_score:.3f}',
+                                'processed': processed_count
+                            })
                         
-                        # Calculate median motion score
-                        motion_score = np.median(motion_magnitude)
-                        
-                        motion_scores.append(motion_score)
-                        frame_times.append(frame_count / fps)
-                        processed_count += 1
+                        prev_frame = gray
                     
-                    prev_frame = gray
-                
-                frame_count += 1
+                    frame_count += 1
+                    pbar.update(1)
             
             cap.release()
+            
+            processing_time = time.time() - start_time
+            logger.info(f"Motion analysis completed: {processed_count} frames processed in {processing_time:.2f}s")
             
             if not motion_scores:
                 logger.warning("No motion features extracted, using fallback")
