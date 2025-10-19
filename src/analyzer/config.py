@@ -29,6 +29,15 @@ class Config(BaseModel):
     with_motion: bool = Field(default=False, description="Include motion analysis")
     align_to_beat: bool = Field(default=False, description="Align clips to beat boundaries")
     
+    # Video export settings
+    export_video: bool = Field(default=False, description="Export video clips")
+    export_dir: Path = Field(default=Path("clips"), description="Directory for exported video clips")
+    export_format: str = Field(default="original", description="Export format: original, vertical, or square")
+    auto_reframe: bool = Field(default=False, description="Enable auto-reframe with people detection")
+    
+    # Progress events
+    progress_events: bool = Field(default=False, description="Enable progress events in stdout for SSE")
+    
     # Seed timestamps (in seconds)
     seed_timestamps: List[float] = Field(default_factory=list, description="Seed timestamps for peak detection")
     
@@ -42,6 +51,15 @@ class Config(BaseModel):
         """Validate that max_clip_length > min_clip_length."""
         if info.data.get("min_clip_length") and v <= info.data["min_clip_length"]:
             raise ValueError("max_clip_length must be greater than min_clip_length")
+        return v
+    
+    @field_validator("export_format")
+    @classmethod
+    def export_format_must_be_valid(cls, v):
+        """Validate export format."""
+        valid_formats = ["original", "vertical", "square"]
+        if v not in valid_formats:
+            raise ValueError(f"export_format must be one of {valid_formats}")
         return v
     
     @field_validator("seed_timestamps")

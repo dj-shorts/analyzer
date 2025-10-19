@@ -105,6 +105,33 @@ def setup_logging(verbose: bool = False) -> None:
     type=str, 
     help="RAM limit (e.g., '2GB')"
 )
+@click.option(
+    "--export-video",
+    is_flag=True,
+    help="Export video clips"
+)
+@click.option(
+    "--export-dir",
+    type=click.Path(path_type=Path),
+    default="clips",
+    help="Directory for exported video clips (default: clips)"
+)
+@click.option(
+    "--export-format",
+    type=click.Choice(["original", "vertical", "square"], case_sensitive=False),
+    default="original",
+    help="Export format: original (16:9), vertical (9:16), or square (1:1)"
+)
+@click.option(
+    "--auto-reframe",
+    is_flag=True,
+    help="Enable auto-reframe with HOG people detection"
+)
+@click.option(
+    "--progress-events",
+    is_flag=True,
+    help="Enable progress events in stdout for SSE"
+)
 def main(
     input: Path,
     clips: int,
@@ -120,6 +147,11 @@ def main(
     verbose: bool,
     threads: Optional[int],
     ram_limit: Optional[str],
+    export_video: bool,
+    export_dir: Path,
+    export_format: str,
+    auto_reframe: bool,
+    progress_events: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -160,6 +192,11 @@ def main(
             output_csv=out_csv,
             threads=threads,
             ram_limit=ram_limit,
+            export_video=export_video,
+            export_dir=export_dir,
+            export_format=export_format.lower(),
+            auto_reframe=auto_reframe,
+            progress_events=progress_events,
         )
         
         # Create and run analyzer
@@ -175,6 +212,13 @@ def main(
         console.print(f"  • Beat alignment: {'Yes' if align_to_beat else 'No'}")
         if seed_timestamps:
             console.print(f"  • Seeds: {len(seed_timestamps)} timestamps")
+        if export_video:
+            console.print(f"  • Video export: Yes ({export_format} format)")
+            console.print(f"  • Export directory: {export_dir}")
+            if auto_reframe:
+                console.print(f"  • Auto-reframe: Yes")
+        if progress_events:
+            console.print(f"  • Progress events: Yes")
         
         # Run analysis
         results = analyzer.analyze()
