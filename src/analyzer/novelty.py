@@ -5,9 +5,7 @@ Novelty detection module for MVP Analyzer.
 import logging
 from typing import Tuple, Dict, Any
 
-# import librosa  # Will be added in Issue A3
 import numpy as np
-from scipy import ndimage
 
 from .config import Config
 
@@ -62,10 +60,10 @@ class NoveltyDetector:
         # Combine features
         novelty_scores = 0.7 * onset_norm + 0.3 * contrast_norm
         
-        # Smooth the novelty curve
+        # Smooth the novelty curve with simple moving average
         smoothing_frames = int(0.5 * sr / self.hop_length)
         if smoothing_frames > 1:
-            novelty_scores = ndimage.gaussian_filter1d(novelty_scores, sigma=smoothing_frames/3)
+            novelty_scores = self._smooth_signal(novelty_scores, smoothing_frames)
         
         # Create time axis
         time_axis = np.arange(len(novelty_scores)) * self.hop_length / sr
@@ -110,3 +108,23 @@ class NoveltyDetector:
         normalized = np.clip(normalized, 0, 1)
         
         return normalized
+    
+    def _smooth_signal(self, signal: np.ndarray, window_size: int) -> np.ndarray:
+        """
+        Smooth signal using simple moving average.
+        
+        Args:
+            signal: Input signal
+            window_size: Window size for smoothing
+            
+        Returns:
+            Smoothed signal
+        """
+        if window_size <= 1:
+            return signal
+        
+        # Simple moving average
+        kernel = np.ones(window_size) / window_size
+        smoothed = np.convolve(signal, kernel, mode='same')
+        
+        return smoothed

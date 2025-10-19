@@ -6,7 +6,6 @@ import logging
 from typing import List, Tuple, Dict, Any
 
 import numpy as np
-from scipy.signal import find_peaks
 
 from .config import Config
 
@@ -43,12 +42,8 @@ class PeakPicker:
         # Convert spacing to frames (approximate)
         spacing_frames = int(self.config.peak_spacing * sr / hop_length / 1000)  # Convert ms to frames
         
-        # Find peaks using scipy
-        peaks, properties = find_peaks(
-            novelty_scores,
-            distance=spacing_frames,
-            prominence=0.1  # Minimum prominence for peak detection
-        )
+        # Find peaks using simple peak detection
+        peaks = self._find_peaks_simple(novelty_scores, spacing_frames, prominence=0.1)
         
         # Get top-K peaks by score
         if len(peaks) > 0:
@@ -164,3 +159,30 @@ class PeakPicker:
             seed_flags = np.array([], dtype=bool)
         
         return final_peaks, final_scores, seed_flags
+    
+    def _find_peaks_simple(self, signal: np.ndarray, min_distance: int, prominence: float = 0.1) -> np.ndarray:
+        """
+        Simple peak detection algorithm.
+        
+        Args:
+            signal: Input signal
+            min_distance: Minimum distance between peaks
+            prominence: Minimum prominence for peak detection
+            
+        Returns:
+            Array of peak indices
+        """
+        peaks = []
+        n = len(signal)
+        
+        # Find local maxima
+        for i in range(1, n - 1):
+            # Check if it's a local maximum
+            if signal[i] > signal[i-1] and signal[i] > signal[i+1]:
+                # Check prominence (simplified - just check if above threshold)
+                if signal[i] > prominence:
+                    # Check distance from previous peaks
+                    if not peaks or i - peaks[-1] >= min_distance:
+                        peaks.append(i)
+        
+        return np.array(peaks)
