@@ -127,6 +127,12 @@ def setup_logging(verbose: bool = False) -> None:
     is_flag=True,
     help="Enable auto-reframe with HOG people detection for vertical/square formats"
 )
+@click.option(
+    "--progress-events",
+    is_flag=True,
+    default=True,
+    help="Enable progress events in stdout for SSE (default: True)"
+)
 def main(
     input: Path,
     clips: int,
@@ -146,6 +152,7 @@ def main(
     export_dir: Path,
     export_format: str,
     auto_reframe: bool,
+    progress_events: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -181,6 +188,7 @@ def main(
             peak_spacing=spacing,
             with_motion=with_motion,
             align_to_beat=align_to_beat,
+            progress_events=progress_events,
             export_video=export_video,
             export_dir=export_dir,
             export_format=export_format,

@@ -28,6 +28,7 @@ class Config(BaseModel):
     # Feature flags
     with_motion: bool = Field(default=False, description="Include motion analysis")
     align_to_beat: bool = Field(default=False, description="Align clips to beat boundaries")
+    progress_events: bool = Field(default=True, description="Enable progress events in stdout for SSE")
     
     # Video export parameters
     export_video: bool = Field(default=False, description="Export video clips")
