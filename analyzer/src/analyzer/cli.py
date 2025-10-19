@@ -122,6 +122,11 @@ def setup_logging(verbose: bool = False) -> None:
     default="original",
     help="Export format: original (16:9), vertical (9:16), or square (1:1) (default: original)"
 )
+@click.option(
+    "--auto-reframe",
+    is_flag=True,
+    help="Enable auto-reframe with HOG people detection for vertical/square formats"
+)
 def main(
     input: Path,
     clips: int,
@@ -140,6 +145,7 @@ def main(
     export_video: bool,
     export_dir: Path,
     export_format: str,
+    auto_reframe: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -178,6 +184,7 @@ def main(
             export_video=export_video,
             export_dir=export_dir,
             export_format=export_format,
+            auto_reframe=auto_reframe,
             seed_timestamps=seed_timestamps,
             output_json=out_json,
             output_csv=out_csv,
@@ -200,6 +207,7 @@ def main(
         if export_video:
             console.print(f"  • Export directory: {export_dir}")
             console.print(f"  • Export format: {export_format}")
+            console.print(f"  • Auto-reframe: {'Yes' if auto_reframe else 'No'}")
         if seed_timestamps:
             console.print(f"  • Seeds: {len(seed_timestamps)} timestamps")
         

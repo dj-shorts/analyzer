@@ -33,6 +33,7 @@ class Config(BaseModel):
     export_video: bool = Field(default=False, description="Export video clips")
     export_dir: Path = Field(default=Path("clips"), description="Directory for exported video clips")
     export_format: str = Field(default="original", description="Export format: original, vertical, or square")
+    auto_reframe: bool = Field(default=False, description="Enable auto-reframe with people detection")
     
     # Seed timestamps (in seconds)
     seed_timestamps: List[float] = Field(default_factory=list, description="Seed timestamps for peak detection")

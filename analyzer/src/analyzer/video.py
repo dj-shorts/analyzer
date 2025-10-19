@@ -11,6 +11,7 @@ from typing import Dict, Any, Optional, List
 import json
 
 from .config import Config
+from .people_detector import PeopleDetector
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,12 @@ class VideoExporter:
     def __init__(self, config: Config):
         """Initialize video exporter with configuration."""
         self.config = config
+        
+        # Initialize people detector if auto-reframe is enabled
+        if config.auto_reframe:
+            self.people_detector = PeopleDetector(config)
+        else:
+            self.people_detector = None
         
         # Format definitions
         self.formats = {
@@ -383,10 +390,14 @@ class VideoExporter:
         
         # Add video filter for format conversion
         if format_config["crop"]:
-            # Build crop and scale filter
-            filter_complex = self._build_crop_scale_filter(format_config)
-            cmd.extend(["-filter_complex", filter_complex])
-            cmd.extend(["-map", "[v]"])
+            # Check if auto-reframe is enabled
+            if self.config.auto_reframe and self.people_detector:
+                crop_scale_filter = self._build_auto_reframe_filter(
+                    input_path, start_time, duration, format_config
+                )
+            else:
+                crop_scale_filter = self._build_crop_scale_filter(format_config)
+            cmd.extend(["-vf", crop_scale_filter])
         else:
             cmd.extend(self.h264_params)
         
@@ -470,3 +481,52 @@ class VideoExporter:
         filter_string = ",".join(filter_parts)
         
         return f"[0:v]{filter_string}[v]"
+
+    def _build_auto_reframe_filter(self, input_path: Path, start_time: float, duration: float, format_config: Dict[str, Any]) -> str:
+        """
+        Build FFmpeg filter with auto-reframe using people detection.
+        
+        Args:
+            input_path: Path to input video file
+            start_time: Start time in seconds
+            duration: Duration in seconds
+            format_config: Format configuration dictionary
+            
+        Returns:
+            FFmpeg filter string with auto-reframe
+        """
+        try:
+            # Detect people in the video segment
+            detection_result = self.people_detector.detect_people_in_video_segment(
+                input_path, start_time, duration
+            )
+            
+            if detection_result["success"] and detection_result["center_x"] is not None:
+                # Use people detection for crop center
+                center_x = detection_result["center_x"]
+                logger.info(f"Auto-reframe: Using people detection center X={center_x}")
+                
+                # Get input video dimensions (simplified - in practice you'd get from video info)
+                input_width = 1920  # Default assumption
+                input_height = 1080  # Default assumption
+                
+                # Calculate crop window around detected people
+                crop_x, crop_y, crop_width, crop_height = self.people_detector.calculate_crop_window(
+                    center_x, input_width, input_height, format_config["width"], format_config["height"]
+                )
+                
+                # Build filter with auto-reframe crop
+                filter_parts = [
+                    f"crop={crop_width}:{crop_height}:{crop_x}:{crop_y}",
+                    f"scale={format_config['width']}:{format_config['height']}"
+                ]
+                
+                return ",".join(filter_parts)
+            else:
+                # Fallback to center crop if no people detected
+                logger.info("Auto-reframe: No people detected, falling back to center crop")
+                return self._build_crop_scale_filter(format_config)
+                
+        except Exception as e:
+            logger.warning(f"Auto-reframe failed: {e}, falling back to center crop")
+            return self._build_crop_scale_filter(format_config)
