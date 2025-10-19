@@ -1,0 +1,13 @@
+clips/
+*.mp4
+*.mkv
+*.avi
+*.mov
+# Video files everywhere
+**/*.mp4
+**/*.mov
+**/*.mkv
+**/*.avi
+**/*.wmv
+**/*.flv
+**/*.webm
