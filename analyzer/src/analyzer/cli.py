@@ -105,34 +105,6 @@ def setup_logging(verbose: bool = False) -> None:
     type=str, 
     help="RAM limit (e.g., '2GB')"
 )
-@click.option(
-    "--export-video",
-    is_flag=True,
-    help="Export video clips (16:9 original format)"
-)
-@click.option(
-    "--export-dir",
-    type=click.Path(path_type=Path),
-    default="clips",
-    help="Directory for exported video clips (default: clips)"
-)
-@click.option(
-    "--export-format",
-    type=click.Choice(["original", "vertical", "square"]),
-    default="original",
-    help="Export format: original (16:9), vertical (9:16), or square (1:1) (default: original)"
-)
-@click.option(
-    "--auto-reframe",
-    is_flag=True,
-    help="Enable auto-reframe with HOG people detection for vertical/square formats"
-)
-@click.option(
-    "--progress-events",
-    is_flag=True,
-    default=True,
-    help="Enable progress events in stdout for SSE (default: True)"
-)
 def main(
     input: Path,
     clips: int,
@@ -148,11 +120,6 @@ def main(
     verbose: bool,
     threads: Optional[int],
     ram_limit: Optional[str],
-    export_video: bool,
-    export_dir: Path,
-    export_format: str,
-    auto_reframe: bool,
-    progress_events: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -188,11 +155,6 @@ def main(
             peak_spacing=spacing,
             with_motion=with_motion,
             align_to_beat=align_to_beat,
-            progress_events=progress_events,
-            export_video=export_video,
-            export_dir=export_dir,
-            export_format=export_format,
-            auto_reframe=auto_reframe,
             seed_timestamps=seed_timestamps,
             output_json=out_json,
             output_csv=out_csv,
@@ -211,11 +173,6 @@ def main(
         console.print(f"  • Spacing: {spacing} frames")
         console.print(f"  • Motion analysis: {'Yes' if with_motion else 'No'}")
         console.print(f"  • Beat alignment: {'Yes' if align_to_beat else 'No'}")
-        console.print(f"  • Video export: {'Yes' if export_video else 'No'}")
-        if export_video:
-            console.print(f"  • Export directory: {export_dir}")
-            console.print(f"  • Export format: {export_format}")
-            console.print(f"  • Auto-reframe: {'Yes' if auto_reframe else 'No'}")
         if seed_timestamps:
             console.print(f"  • Seeds: {len(seed_timestamps)} timestamps")
         
@@ -226,18 +183,6 @@ def main(
         console.print(f"[blue]Results saved to:[/blue]")
         console.print(f"  • JSON: {out_json}")
         console.print(f"  • CSV: {out_csv}")
-        
-        # Show video export results if enabled
-        if export_video and "video_export" in results:
-            video_export = results["video_export"]
-            console.print(f"[blue]Video clips exported:[/blue]")
-            console.print(f"  • Total clips: {video_export['total_clips']}")
-            console.print(f"  • Exported: {video_export['exported_clips']}")
-            console.print(f"  • Failed: {video_export['failed_clips']}")
-            console.print(f"  • Directory: {export_dir}")
-            
-            if video_export['failed_clips'] > 0:
-                console.print(f"[yellow]⚠️  Some clips failed to export. Check logs for details.[/yellow]")
         
     except KeyboardInterrupt:
         console.print("\n[yellow]Analysis interrupted by user[/yellow]")
