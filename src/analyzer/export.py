@@ -124,6 +124,7 @@ class ResultExporter:
                 }
             },
             "clips": segments,
+            "tempo_confidence": 0.0,  # Placeholder for future tempo analysis
             "summary": {
                 "total_clips": len(segments),
                 "seed_based_clips": sum(1 for s in segments if s['seed_based']),
