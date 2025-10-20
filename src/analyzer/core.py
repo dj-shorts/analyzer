@@ -134,7 +134,7 @@ class Analyzer:
                 if hasattr(self, 'progress_emitter'):
                     self.progress_emitter.start_stage(AnalysisStage.VIDEO_EXPORT)
                 logger.info("Step 9: Exporting video clips")
-                video_results = self.video_exporter.export_clips(segments)
+                video_results = self.video_exporter.export_clips(segments, self.config.input_path, self.config.export_dir)
                 results["video_export"] = video_results
                 if hasattr(self, 'progress_emitter'):
                     self.progress_emitter.complete_stage(AnalysisStage.VIDEO_EXPORT)
