@@ -12,6 +12,8 @@ import json
 
 from .config import Config
 from .people_detector import PeopleDetector
+from .object_tracker import ObjectTracker
+from .dynamic_cropper import DynamicCropper
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +30,14 @@ class VideoExporter:
             self.people_detector = PeopleDetector(config)
         else:
             self.people_detector = None
+        
+        # Initialize object tracker and dynamic cropper if object tracking is enabled
+        if config.enable_object_tracking:
+            self.object_tracker = ObjectTracker(config)
+            self.dynamic_cropper = DynamicCropper(config)
+        else:
+            self.object_tracker = None
+            self.dynamic_cropper = None
         
         # Format definitions
         self.formats = {
@@ -67,6 +77,12 @@ class VideoExporter:
         # Ensure output directory exists
         output_dir.mkdir(parents=True, exist_ok=True)
         
+        # Perform object tracking analysis if enabled
+        tracking_data = None
+        if self.config.enable_object_tracking and self.object_tracker:
+            logger.info("Performing object tracking analysis for dynamic cropping")
+            tracking_data = self.object_tracker.analyze_video_tracking(input_video_path)
+        
         exported_clips = []
         export_errors = []
         
@@ -85,7 +101,7 @@ class VideoExporter:
             try:
                 # Export single clip
                 export_result = self._export_single_clip(
-                    input_video_path, output_path, start_time, end_time
+                    input_video_path, output_path, start_time, end_time, tracking_data
                 )
                 
                 if export_result["success"]:
@@ -128,7 +144,7 @@ class VideoExporter:
         
         return export_summary
 
-    def _export_single_clip(self, input_path: Path, output_path: Path, start_time: float, end_time: float) -> Dict[str, Any]:
+    def _export_single_clip(self, input_path: Path, output_path: Path, start_time: float, end_time: float, tracking_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Export a single video clip.
         
@@ -154,7 +170,7 @@ class VideoExporter:
             return self._transcode_to_h264(input_path, output_path, start_time, end_time)
         else:
             # For non-original formats, use transcoding with format conversion
-            return self._transcode_with_format(input_path, output_path, start_time, end_time)
+            return self._transcode_with_format(input_path, output_path, start_time, end_time, tracking_data)
 
     def _try_stream_copy(self, input_path: Path, output_path: Path, start_time: float, end_time: float) -> Dict[str, Any]:
         """
@@ -363,7 +379,7 @@ class VideoExporter:
         
         return compatible
 
-    def _transcode_with_format(self, input_path: Path, output_path: Path, start_time: float, end_time: float) -> Dict[str, Any]:
+    def _transcode_with_format(self, input_path: Path, output_path: Path, start_time: float, end_time: float, tracking_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
         Transcode video with format conversion (vertical/square).
         
@@ -390,8 +406,13 @@ class VideoExporter:
         
         # Add video filter for format conversion
         if format_config["crop"]:
+            # Check if object tracking is enabled
+            if self.config.enable_object_tracking and tracking_data and self.dynamic_cropper:
+                crop_scale_filter = self._build_dynamic_crop_filter(
+                    input_path, start_time, duration, format_config, tracking_data
+                )
             # Check if auto-reframe is enabled
-            if self.config.auto_reframe and self.people_detector:
+            elif self.config.auto_reframe and self.people_detector:
                 crop_scale_filter = self._build_auto_reframe_filter(
                     input_path, start_time, duration, format_config
                 )
@@ -481,6 +502,63 @@ class VideoExporter:
         filter_string = ",".join(filter_parts)
         
         return filter_string
+
+    def _build_dynamic_crop_filter(self, input_path: Path, start_time: float, duration: float, format_config: Dict[str, Any], tracking_data: Dict[str, Any]) -> str:
+        """
+        Build FFmpeg filter with dynamic cropping using object tracking.
+        
+        Args:
+            input_path: Path to input video file
+            start_time: Start time in seconds
+            duration: Duration in seconds
+            format_config: Format configuration dictionary
+            tracking_data: Object tracking analysis results
+            
+        Returns:
+            FFmpeg filter string with dynamic cropping
+        """
+        try:
+            # Get video dimensions from tracking data
+            video_width, video_height = tracking_data.get("video_dimensions", (1920, 1080))
+            
+            # Calculate crop dimensions for target format
+            crop_width, crop_height = self.dynamic_cropper.calculate_crop_dimensions(
+                video_width, video_height, self.config.export_format
+            )
+            
+            # Generate timeline for this clip
+            import numpy as np
+            clip_times = np.linspace(start_time, start_time + duration, num=10)  # 10 points for smooth interpolation
+            
+            # Interpolate tracking positions for this clip timeline
+            tracking_positions = self.object_tracker.interpolate_to_export_timeline(
+                tracking_data, clip_times
+            )
+            
+            # Validate and clamp crop positions
+            validated_positions = self.dynamic_cropper.validate_crop_positions(
+                tracking_positions, video_width, video_height, crop_width, crop_height
+            )
+            
+            # Generate dynamic crop filter
+            crop_filter = self.dynamic_cropper.generate_crop_filter(
+                validated_positions, video_width, video_height, 
+                crop_width, crop_height, start_time, duration
+            )
+            
+            # Add scale filter
+            scale_filter = f"scale={format_config['width']}:{format_config['height']}"
+            
+            # Combine filters
+            combined_filter = f"{crop_filter},{scale_filter}"
+            
+            logger.info(f"Dynamic crop: Generated filter for {len(validated_positions)} tracking positions")
+            
+            return combined_filter
+            
+        except Exception as e:
+            logger.warning(f"Dynamic crop failed: {e}, falling back to center crop")
+            return self._build_crop_scale_filter(format_config)
 
     def _build_auto_reframe_filter(self, input_path: Path, start_time: float, duration: float, format_config: Dict[str, Any]) -> str:
         """
