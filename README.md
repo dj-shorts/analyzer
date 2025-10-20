@@ -154,7 +154,33 @@ uv run analyzer video.mp4 --clips 6 --export-video --export-format square
 
 # Auto-reframe with people detection
 uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical --auto-reframe
+
+# Dynamic Object Tracking (keeps subject centered)
+# Vertical (9:16) with tracking
+uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical \
+  --enable-object-tracking --tracking-smoothness 0.8 --tracking-confidence 0.5
+
+# Square (1:1) with tracking
+uv run analyzer video.mp4 --clips 6 --export-video --export-format square \
+  --enable-object-tracking --tracking-smoothness 0.8 --tracking-confidence 0.5
+
+# Debug tracking overlay video for inspection
+uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical \
+  --enable-object-tracking --debug-tracking
 ```
+
+### Object Tracking
+Функция динамического трекинга позволяет держать объект (например, DJ) по центру кадра при экспорте вертикального и квадратного видео.
+
+- Включение: `--enable-object-tracking`
+- Плавность: `--tracking-smoothness 0.0-1.0` (по умолчанию 0.8)
+- Порог уверенности: `--tracking-confidence 0.0-1.0` (по умолчанию 0.5)
+- Фолбэк к центру: по умолчанию включён; отключить — `--no-fallback-center`
+- Отладка: `--debug-tracking` сохранит отладочное видео с оверлеем
+
+Примечания:
+- Формат `original` (16:9) не использует автокроп и сохраняет исходное кадрирование.
+- Для `vertical` и `square` при включённом трекинге используется динамический кроп; если трекинг выключен, применяется центрированный кроп или `--auto-reframe`.
 
 ### Progress Events
 ```bash
@@ -230,6 +256,10 @@ Exported video clips in various formats:
 - **Vertical**: 9:16 aspect ratio with crop and scale
 - **Square**: 1:1 aspect ratio with crop and scale
 - **Auto-reframe**: Intelligent crop positioning based on people detection
+  
+Notes:
+- When using **Original** format, no auto-cropping is applied; the source framing is preserved.
+- For **Vertical** and **Square**, you can enable dynamic tracking with `--enable-object-tracking` to keep the subject centered. If tracking is disabled, a center crop is used (or auto-reframe when `--auto-reframe` is set).
 
 ### Progress Events
 JSON-formatted events for Server-Sent Events integration:

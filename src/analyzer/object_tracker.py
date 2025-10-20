@@ -92,6 +92,8 @@ class ObjectTracker:
             crop_positions = []  # List of (x, y) crop center positions
             frame_times = []
             confidence_scores = []
+            detections_count = 0
+            low_confidence_count = 0
             
             frame_count = 0
             processed_count = 0
@@ -115,6 +117,10 @@ class ObjectTracker:
                         crop_positions.append(crop_center)
                         frame_times.append(frame_count / fps)
                         confidence_scores.append(confidence)
+                        if confidence >= self.confidence_threshold:
+                            detections_count += 1
+                        else:
+                            low_confidence_count += 1
                         processed_count += 1
                         
                         # Debug visualization
@@ -150,6 +156,19 @@ class ObjectTracker:
             
             logger.info(f"Generated {len(crop_positions)} tracking positions")
             
+            # Compute simple metrics
+            avg_confidence = float(np.mean(confidence_scores)) if len(confidence_scores) else 0.0
+            detection_rate = float(detections_count / processed_count) if processed_count else 0.0
+            metrics = {
+                "processed_frames": int(processed_count),
+                "detections": int(detections_count),
+                "low_confidence": int(low_confidence_count),
+                "detection_rate": detection_rate,
+                "avg_confidence": avg_confidence,
+                "processing_time_sec": float(processing_time),
+                "sample_fps": tracking_fps,
+            }
+
             # Save debug video if debug tracking is enabled
             debug_video_path = None
             if self.debug_tracking and self.debug_frames:
@@ -164,7 +183,8 @@ class ObjectTracker:
                 "video_duration": duration,
                 "video_dimensions": (width, height),
                 "tracking_available": True,
-                "debug_video_path": debug_video_path
+                "debug_video_path": debug_video_path,
+                "metrics": metrics
             }
             
         except Exception as e:

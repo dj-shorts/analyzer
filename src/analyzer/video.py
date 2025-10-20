@@ -86,6 +86,13 @@ class VideoExporter:
             # Log debug video path if available
             if tracking_data.get("debug_video_path"):
                 logger.info(f"Debug tracking video saved: {tracking_data['debug_video_path']}")
+            # Log tracking metrics if available
+            if tracking_data and tracking_data.get("metrics"):
+                m = tracking_data["metrics"]
+                logger.info(
+                    "Tracking metrics — frames: %s, detections: %s (rate=%.2f), avg_conf=%.2f, time=%.2fs",
+                    m.get("processed_frames"), m.get("detections"), m.get("detection_rate", 0.0), m.get("avg_confidence", 0.0), m.get("processing_time_sec", 0.0)
+                )
         
         exported_clips = []
         export_errors = []
