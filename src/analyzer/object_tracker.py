@@ -48,16 +48,22 @@ class ObjectTracker:
     
     def analyze_segments_tracking(self, video_path: Path, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Analyze tracking only for specific video segments (much faster).
+        Analyze tracking for segments with smooth interpolation to full video FPS.
+        
+        Strategy:
+        1. Audio analysis finds best segments
+        2. Track objects at 4-6fps in segments  
+        3. Build camera displacement vectors from center
+        4. Smooth interpolation to full video FPS (24/30fps)
         
         Args:
             video_path: Path to input video file
             segments: List of segments with start/end times
             
         Returns:
-            Dict containing tracking data for segments
+            Dict containing tracking data with full FPS interpolation
         """
-        logger.info(f"Starting segment-based object tracking for {len(segments)} segments")
+        logger.info(f"Starting hybrid segment tracking for {len(segments)} segments")
         
         try:
             # Open video capture
@@ -77,16 +83,14 @@ class ObjectTracker:
                 cap.release()
                 return self._create_fallback_tracking_data()
             
-            # Use higher fps for segments (shorter duration)
-            tracking_fps = 8.0
+            # Use 4-6fps for tracking (balance between quality and speed)
+            tracking_fps = 5.0
             frame_interval = max(1, int(fps / tracking_fps))
             
-            logger.info(f"Segment tracking: using {tracking_fps:.1f} fps, sampling every {frame_interval} frames")
+            logger.info(f"Hybrid tracking: {tracking_fps:.1f} fps sampling, interpolating to {fps:.1f} fps")
             
             # Process each segment
-            all_crop_positions = []
-            all_frame_times = []
-            all_confidence_scores = []
+            segment_data = []
             total_processed = 0
             
             for i, segment in enumerate(segments):
@@ -99,6 +103,7 @@ class ObjectTracker:
                 # Seek to segment start
                 cap.set(cv2.CAP_PROP_POS_MSEC, start_time * 1000)
                 
+                # Track at reduced FPS
                 segment_positions = []
                 segment_times = []
                 segment_confidences = []
@@ -121,44 +126,87 @@ class ObjectTracker:
                     
                     frame_count += 1
                 
-                # Add segment data to overall results
-                all_crop_positions.extend(segment_positions)
-                all_frame_times.extend(segment_times)
-                all_confidence_scores.extend(segment_confidences)
-                total_processed += len(segment_positions)
+                # Store segment data for interpolation
+                segment_data.append({
+                    'start_time': start_time,
+                    'end_time': end_time,
+                    'positions': np.array(segment_positions),
+                    'times': np.array(segment_times),
+                    'confidences': np.array(segment_confidences)
+                })
                 
-                logger.info(f"Segment {i+1}: processed {len(segment_positions)} tracking points")
+                total_processed += len(segment_positions)
+                logger.info(f"Segment {i+1}: {len(segment_positions)} tracking points at {tracking_fps:.1f}fps")
             
             cap.release()
             
-            if not all_crop_positions:
+            if not segment_data:
                 logger.warning("No tracking data extracted from segments, using fallback")
                 return self._create_fallback_tracking_data()
+            
+            # Interpolate each segment to full video FPS for smooth movement
+            all_crop_positions = []
+            all_frame_times = []
+            all_confidence_scores = []
+            
+            for segment in segment_data:
+                # Create full FPS timeline for this segment
+                segment_start = segment['start_time']
+                segment_end = segment['end_time']
+                segment_duration = segment_end - segment_start
+                
+                # Generate full FPS timeline
+                full_fps_times = np.linspace(segment_start, segment_end, 
+                                           int(segment_duration * fps) + 1)
+                
+                if len(segment['positions']) > 1:
+                    # Interpolate positions to full FPS
+                    interpolated_x = np.interp(full_fps_times, segment['times'], 
+                                            segment['positions'][:, 0])
+                    interpolated_y = np.interp(full_fps_times, segment['times'], 
+                                            segment['positions'][:, 1])
+                    interpolated_conf = np.interp(full_fps_times, segment['times'], 
+                                                segment['confidences'])
+                    
+                    # Combine interpolated positions
+                    interpolated_positions = np.column_stack([interpolated_x, interpolated_y])
+                else:
+                    # Single point - replicate for all frames
+                    interpolated_positions = np.tile(segment['positions'][0], 
+                                                   (len(full_fps_times), 1))
+                    interpolated_conf = np.full(len(full_fps_times), 
+                                              segment['confidences'][0] if len(segment['confidences']) > 0 else 0.0)
+                
+                all_crop_positions.extend(interpolated_positions)
+                all_frame_times.extend(full_fps_times)
+                all_confidence_scores.extend(interpolated_conf)
             
             # Convert to numpy arrays
             crop_positions = np.array(all_crop_positions)
             frame_times = np.array(all_frame_times)
             confidence_scores = np.array(all_confidence_scores)
             
-            # Smooth crop positions
-            smoothed_positions = self._smooth_crop_positions(crop_positions, confidence_scores)
+            # Apply additional smoothing for ultra-smooth movement
+            smoothed_positions = self._ultra_smooth_positions(crop_positions, confidence_scores, fps)
             
-            logger.info(f"Segment tracking completed: {total_processed} points from {len(segments)} segments")
+            logger.info(f"Hybrid tracking completed: {total_processed} tracking points → {len(crop_positions)} smooth positions at {fps:.1f}fps")
             
             return {
                 "crop_positions": smoothed_positions,
                 "frame_times": frame_times,
                 "confidence_scores": confidence_scores,
-                "sample_rate": tracking_fps,
-                "total_frames": total_processed,
+                "sample_rate": fps,  # Full video FPS
+                "tracking_fps": tracking_fps,  # Original tracking FPS
+                "total_frames": len(crop_positions),
                 "video_duration": sum(s["end"] - s["start"] for s in segments),
                 "video_dimensions": (width, height),
                 "tracking_available": True,
-                "segment_based": True
+                "segment_based": True,
+                "smooth_interpolation": True
             }
             
         except Exception as e:
-            logger.error(f"Error in segment tracking: {e}")
+            logger.error(f"Error in hybrid segment tracking: {e}")
             return self._create_fallback_tracking_data()
         """
         Analyze video to track objects and generate crop positions.
@@ -289,7 +337,7 @@ class ObjectTracker:
                 "processing_time_sec": float(processing_time),
                 "sample_fps": tracking_fps,
             }
-
+            
             # Save debug video if debug tracking is enabled
             debug_video_path = None
             if self.debug_tracking and self.debug_frames:
@@ -381,7 +429,47 @@ class ObjectTracker:
             center_y = height // 2
             return (center_x, center_y), 0.0
     
-    def _smooth_crop_positions(self, positions: np.ndarray, confidences: np.ndarray) -> np.ndarray:
+    def _ultra_smooth_positions(self, positions: np.ndarray, confidences: np.ndarray, fps: float) -> np.ndarray:
+        """
+        Apply ultra-smooth smoothing for camera movement.
+        
+        Uses multiple smoothing techniques:
+        1. Gaussian filter for noise reduction
+        2. Moving average for stability
+        3. Confidence-weighted smoothing
+        
+        Args:
+            positions: Array of (x, y) crop positions
+            confidences: Array of confidence scores
+            fps: Video frame rate
+            
+        Returns:
+            Ultra-smooth crop positions
+        """
+        if len(positions) <= 1:
+            return positions
+        
+        smoothed = np.copy(positions)
+        
+        # Apply Gaussian smoothing (sigma = 0.5 seconds worth of frames)
+        sigma_frames = int(0.5 * fps)  # 0.5 second smoothing window
+        if sigma_frames > 0:
+            from scipy import ndimage
+            smoothed[:, 0] = ndimage.gaussian_filter1d(smoothed[:, 0], sigma=sigma_frames)
+            smoothed[:, 1] = ndimage.gaussian_filter1d(smoothed[:, 1], sigma=sigma_frames)
+        
+        # Apply confidence-weighted smoothing
+        for i in range(1, len(smoothed)):
+            if confidences[i] > 0.7:  # High confidence - minimal smoothing
+                alpha = 0.1
+            elif confidences[i] > 0.4:  # Medium confidence - moderate smoothing
+                alpha = 0.3
+            else:  # Low confidence - heavy smoothing
+                alpha = 0.6
+            
+            smoothed[i] = alpha * positions[i] + (1 - alpha) * smoothed[i-1]
+        
+        return smoothed
         """
         Smooth crop positions to avoid jittery movements.
         

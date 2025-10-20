@@ -552,10 +552,11 @@ class VideoExporter:
                 tracking_positions, video_width, video_height, crop_width, crop_height
             )
             
-            # Generate dynamic crop filter
-            crop_filter = self.dynamic_cropper.generate_crop_filter(
+            # Generate ultra-smooth dynamic crop filter
+            crop_filter = self.dynamic_cropper.generate_smooth_crop_filter(
                 validated_positions, video_width, video_height, 
-                crop_width, crop_height, start_time, duration
+                crop_width, crop_height, start_time, duration,
+                tracking_data["sample_rate"]  # Full video FPS
             )
             
             # Add scale filter
