@@ -1,6 +1,6 @@
 [project]
 name = "analyzer"
-version = "0.1.0"
+version = "0.2.1"
 description = "MVP Analyzer - AI-powered music video highlight extraction tool"
 readme = "README.md"
 authors = [
