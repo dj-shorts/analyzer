@@ -44,6 +44,7 @@ class Config(BaseModel):
     tracking_smoothness: float = Field(default=0.8, ge=0.0, le=1.0, description="Tracking smoothness factor (0.0=no smoothing, 1.0=maximum smoothing)")
     tracking_confidence_threshold: float = Field(default=0.5, ge=0.0, le=1.0, description="Minimum confidence threshold for object detection")
     fallback_to_center: bool = Field(default=True, description="Fallback to center crop when object tracking fails")
+    debug_tracking: bool = Field(default=False, description="Enable debug visualization of object tracking")
     
     # Seed timestamps (in seconds)
     seed_timestamps: List[float] = Field(default_factory=list, description="Seed timestamps for peak detection")

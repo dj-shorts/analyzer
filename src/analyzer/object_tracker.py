@@ -39,6 +39,10 @@ class ObjectTracker:
         self.tracking_lost_frames = 0
         self.max_lost_frames = 10  # Re-detect after 10 lost frames
         
+        # Debug visualization
+        self.debug_tracking = getattr(config, 'debug_tracking', False)
+        self.debug_frames = []  # Store frames with tracking visualization
+        
         logger.info(f"ObjectTracker initialized with smoothness={self.tracking_smoothness}, "
                    f"confidence={self.confidence_threshold}")
     
@@ -77,8 +81,8 @@ class ObjectTracker:
             
             logger.info(f"Video properties: {fps:.2f} fps, {total_frames} frames, {width}x{height}")
             
-            # Calculate frame sampling interval for tracking (every 0.5 seconds)
-            tracking_fps = 2.0  # Track at 2 fps for performance
+            # Calculate frame sampling interval for tracking (24 fps for smooth dynamic cropping)
+            tracking_fps = 24.0  # Track at 24 fps for smooth dynamic cropping
             frame_interval = max(1, int(fps / tracking_fps))
             expected_processed_frames = total_frames // frame_interval
             
@@ -113,6 +117,11 @@ class ObjectTracker:
                         confidence_scores.append(confidence)
                         processed_count += 1
                         
+                        # Debug visualization
+                        if self.debug_tracking:
+                            debug_frame = self._create_debug_frame(frame, crop_center, confidence, width, height)
+                            self.debug_frames.append(debug_frame)
+                        
                         # Update progress bar
                         pbar.set_postfix({
                             'objects': len([c for c in confidence_scores[-5:] if c > 0.5]),
@@ -141,6 +150,11 @@ class ObjectTracker:
             
             logger.info(f"Generated {len(crop_positions)} tracking positions")
             
+            # Save debug video if debug tracking is enabled
+            debug_video_path = None
+            if self.debug_tracking and self.debug_frames:
+                debug_video_path = self._save_debug_video(video_path, fps, width, height)
+            
             return {
                 "crop_positions": smoothed_positions,
                 "frame_times": frame_times,
@@ -149,7 +163,8 @@ class ObjectTracker:
                 "total_frames": processed_count,
                 "video_duration": duration,
                 "video_dimensions": (width, height),
-                "tracking_available": True
+                "tracking_available": True,
+                "debug_video_path": debug_video_path
             }
             
         except Exception as e:
@@ -252,6 +267,99 @@ class ObjectTracker:
                 smoothed[i] = alpha * positions[i] + (1 - alpha) * smoothed[i-1]
         
         return smoothed
+    
+    def _create_debug_frame(self, frame: np.ndarray, crop_center: Tuple[int, int], confidence: float, width: int, height: int) -> np.ndarray:
+        """
+        Create a debug frame with tracking visualization.
+        
+        Args:
+            frame: Original frame
+            crop_center: Detected crop center position
+            confidence: Detection confidence
+            width: Frame width
+            height: Frame height
+            
+        Returns:
+            Frame with tracking visualization overlay
+        """
+        debug_frame = frame.copy()
+        
+        # Draw crop center point
+        center_x, center_y = crop_center
+        color = (0, 255, 0) if confidence > 0.5 else (0, 0, 255)  # Green if confident, red if low confidence
+        
+        # Draw center point
+        cv2.circle(debug_frame, (center_x, center_y), 10, color, -1)
+        cv2.circle(debug_frame, (center_x, center_y), 15, color, 2)
+        
+        # Draw crosshairs
+        cv2.line(debug_frame, (center_x - 20, center_y), (center_x + 20, center_y), color, 2)
+        cv2.line(debug_frame, (center_x, center_y - 20), (center_x, center_y + 20), color, 2)
+        
+        # Draw crop area outline (assuming vertical format)
+        crop_width = int(height * 9 / 16)  # 9:16 aspect ratio
+        crop_height = height
+        crop_x = center_x - crop_width // 2
+        crop_y = center_y - crop_height // 2
+        
+        # Ensure crop area is within frame bounds
+        crop_x = max(0, min(crop_x, width - crop_width))
+        crop_y = max(0, min(crop_y, height - crop_height))
+        
+        # Draw crop rectangle
+        cv2.rectangle(debug_frame, (crop_x, crop_y), (crop_x + crop_width, crop_y + crop_height), color, 2)
+        
+        # Add confidence text
+        confidence_text = f"Conf: {confidence:.2f}"
+        cv2.putText(debug_frame, confidence_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        
+        # Add position text
+        position_text = f"Pos: ({center_x}, {center_y})"
+        cv2.putText(debug_frame, position_text, (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        
+        # Add crop dimensions text
+        crop_text = f"Crop: {crop_width}x{crop_height}"
+        cv2.putText(debug_frame, crop_text, (10, 110), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
+        
+        return debug_frame
+    
+    def _save_debug_video(self, video_path: Path, fps: float, width: int, height: int) -> Optional[str]:
+        """
+        Save debug video with tracking visualization.
+        
+        Args:
+            video_path: Original video path
+            fps: Video frame rate
+            width: Video width
+            height: Video height
+            
+        Returns:
+            Path to saved debug video or None if failed
+        """
+        try:
+            # Create debug video path
+            debug_video_path = video_path.parent / f"{video_path.stem}_debug_tracking.mp4"
+            
+            # Create video writer
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(str(debug_video_path), fourcc, fps, (width, height))
+            
+            if not out.isOpened():
+                logger.error(f"Failed to create debug video writer for {debug_video_path}")
+                return None
+            
+            # Write debug frames
+            for debug_frame in self.debug_frames:
+                out.write(debug_frame)
+            
+            out.release()
+            
+            logger.info(f"Debug tracking video saved to: {debug_video_path}")
+            return str(debug_video_path)
+            
+        except Exception as e:
+            logger.error(f"Error saving debug video: {e}")
+            return None
     
     def _create_fallback_tracking_data(self) -> Dict[str, Any]:
         """
