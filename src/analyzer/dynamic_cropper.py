@@ -145,38 +145,22 @@ class DynamicCropper:
         if len(positions) == 1:
             return str(positions[0])
         
-        # Create piecewise linear interpolation
-        expressions = []
+        # For simplicity, use average position for now
+        # This avoids complex FFmpeg filter expressions that can cause parsing errors
+        avg_position = int(sum(positions) / len(positions))
         
-        for i in range(len(positions) - 1):
-            current_time = i * time_interval
-            next_time = (i + 1) * time_interval
-            
-            # Linear interpolation between current and next position
-            if i == 0:
-                # First segment
-                if len(positions) == 2:
-                    # Simple linear interpolation for two points
-                    expr = f"({positions[0]}+({positions[1]}-{positions[0]})*t/{time_interval:.3f})"
-                else:
-                    # Piecewise with condition
-                    expr = f"if(t<={next_time:.3f},{positions[0]}+({positions[1]}-{positions[0]})*t/{time_interval:.3f},{positions[1]})"
-            else:
-                # Subsequent segments
-                expr = f"if(t<={next_time:.3f},{positions[i]}+({positions[i+1]}-{positions[i]})*(t-{current_time:.3f})/{time_interval:.3f},{positions[i+1]})"
-            
-            expressions.append(expr)
+        # If positions vary significantly, use simple linear interpolation
+        if max(positions) - min(positions) > 50:  # Significant movement
+            # Use simple linear interpolation between first and last position
+            if len(positions) >= 2:
+                start_pos = positions[0]
+                end_pos = positions[-1]
+                total_duration = time_interval * (len(positions) - 1)
+                expr = f"({start_pos}+({end_pos}-{start_pos})*t/{total_duration:.3f})"
+                return expr
         
-        # Combine all expressions
-        if len(expressions) == 1:
-            return expressions[0]
-        else:
-            # Nested if statements for multiple segments
-            result = expressions[-1]  # Start with the last expression
-            for i in range(len(expressions) - 2, -1, -1):
-                result = expressions[i] + "," + result
-            
-            return result
+        # Use average position for stable tracking
+        return str(avg_position)
     
     def calculate_crop_dimensions(
         self, 
