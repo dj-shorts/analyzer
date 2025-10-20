@@ -249,7 +249,7 @@ class MotionDetector:
         
         # Calculate window size in samples
         window_duration = self.motion_window_size  # 0.5 seconds
-        window_samples = max(1, int(window_duration * self.target_fps))
+        window_samples = max(1, int(window_duration * self.base_target_fps))
         
         # Apply moving average smoothing
         smoothed = np.convolve(
