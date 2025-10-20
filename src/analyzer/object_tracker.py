@@ -176,7 +176,6 @@ class ObjectTracker:
                 padding=(32, 32),
                 scale=1.05,
                 hitThreshold=0.0,
-                finalThreshold=2.0,
                 useMeanshiftGrouping=False
             )
             
