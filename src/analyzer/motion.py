@@ -39,6 +39,8 @@ class MotionDetector:
         # Motion analysis parameters - adaptive based on video duration
         self.base_target_fps = 4.0  # Base 4 fps for motion analysis
         self.motion_window_size = 0.5  # 0.5 second smoothing window
+        # Public target fps attribute for tests/consumers; defaults to base
+        self.target_fps = self.base_target_fps
         
         # Adaptive sampling for long videos
         self.long_video_threshold = 1800  # 30 minutes
@@ -102,6 +104,8 @@ class MotionDetector:
             
             # Calculate adaptive target FPS based on video duration
             target_fps = self._calculate_adaptive_fps(duration)
+            # Publish selected fps
+            self.target_fps = target_fps
             
             logger.info(f"Video properties: {fps:.2f} fps, {total_frames} frames, {duration:.2f}s")
             logger.info(f"Adaptive motion analysis: using {target_fps:.1f} fps (duration-based optimization)")
@@ -272,7 +276,7 @@ class MotionDetector:
         return {
             "motion_scores": np.array([0.5]),  # Neutral motion score
             "motion_times": np.array([0.0]),
-            "sample_rate": self.base_target_fps,
+            "sample_rate": self.target_fps,
             "total_frames": 1,
             "video_duration": 0.0,
             "motion_available": False,
