@@ -529,6 +529,11 @@ class VideoExporter:
             FFmpeg filter string with dynamic cropping
         """
         try:
+            # Check if tracking data is available
+            if not tracking_data.get("tracking_available", False):
+                logger.warning("Object tracking data unavailable, falling back to center crop")
+                return self._build_crop_scale_filter(format_config)
+            
             # Get video dimensions from tracking data
             video_width, video_height = tracking_data.get("video_dimensions", (1920, 1080))
             
