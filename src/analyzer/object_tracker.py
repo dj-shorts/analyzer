@@ -46,7 +46,120 @@ class ObjectTracker:
         logger.info(f"ObjectTracker initialized with smoothness={self.tracking_smoothness}, "
                    f"confidence={self.confidence_threshold}")
     
-    def analyze_video_tracking(self, video_path: Path) -> Dict[str, Any]:
+    def analyze_segments_tracking(self, video_path: Path, segments: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Analyze tracking only for specific video segments (much faster).
+        
+        Args:
+            video_path: Path to input video file
+            segments: List of segments with start/end times
+            
+        Returns:
+            Dict containing tracking data for segments
+        """
+        logger.info(f"Starting segment-based object tracking for {len(segments)} segments")
+        
+        try:
+            # Open video capture
+            cap = cv2.VideoCapture(str(video_path))
+            
+            if not cap.isOpened():
+                logger.error(f"Could not open video file: {video_path}")
+                return self._create_fallback_tracking_data()
+            
+            # Get video properties
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            
+            if fps <= 0:
+                logger.warning(f"Invalid FPS ({fps}), using fallback tracking data")
+                cap.release()
+                return self._create_fallback_tracking_data()
+            
+            # Use higher fps for segments (shorter duration)
+            tracking_fps = 8.0
+            frame_interval = max(1, int(fps / tracking_fps))
+            
+            logger.info(f"Segment tracking: using {tracking_fps:.1f} fps, sampling every {frame_interval} frames")
+            
+            # Process each segment
+            all_crop_positions = []
+            all_frame_times = []
+            all_confidence_scores = []
+            total_processed = 0
+            
+            for i, segment in enumerate(segments):
+                start_time = segment["start"]
+                end_time = segment["end"]
+                duration = end_time - start_time
+                
+                logger.info(f"Processing segment {i+1}/{len(segments)}: {start_time:.1f}s-{end_time:.1f}s ({duration:.1f}s)")
+                
+                # Seek to segment start
+                cap.set(cv2.CAP_PROP_POS_MSEC, start_time * 1000)
+                
+                segment_positions = []
+                segment_times = []
+                segment_confidences = []
+                
+                frame_count = 0
+                segment_frames = int(duration * fps)
+                
+                for _ in range(segment_frames):
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    # Sample frames at tracking fps
+                    if frame_count % frame_interval == 0:
+                        crop_center, confidence = self._process_frame(frame, width, height)
+                        
+                        segment_positions.append(crop_center)
+                        segment_times.append(start_time + frame_count / fps)
+                        segment_confidences.append(confidence)
+                    
+                    frame_count += 1
+                
+                # Add segment data to overall results
+                all_crop_positions.extend(segment_positions)
+                all_frame_times.extend(segment_times)
+                all_confidence_scores.extend(segment_confidences)
+                total_processed += len(segment_positions)
+                
+                logger.info(f"Segment {i+1}: processed {len(segment_positions)} tracking points")
+            
+            cap.release()
+            
+            if not all_crop_positions:
+                logger.warning("No tracking data extracted from segments, using fallback")
+                return self._create_fallback_tracking_data()
+            
+            # Convert to numpy arrays
+            crop_positions = np.array(all_crop_positions)
+            frame_times = np.array(all_frame_times)
+            confidence_scores = np.array(all_confidence_scores)
+            
+            # Smooth crop positions
+            smoothed_positions = self._smooth_crop_positions(crop_positions, confidence_scores)
+            
+            logger.info(f"Segment tracking completed: {total_processed} points from {len(segments)} segments")
+            
+            return {
+                "crop_positions": smoothed_positions,
+                "frame_times": frame_times,
+                "confidence_scores": confidence_scores,
+                "sample_rate": tracking_fps,
+                "total_frames": total_processed,
+                "video_duration": sum(s["end"] - s["start"] for s in segments),
+                "video_dimensions": (width, height),
+                "tracking_available": True,
+                "segment_based": True
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in segment tracking: {e}")
+            return self._create_fallback_tracking_data()
         """
         Analyze video to track objects and generate crop positions.
         
@@ -81,8 +194,16 @@ class ObjectTracker:
             
             logger.info(f"Video properties: {fps:.2f} fps, {total_frames} frames, {width}x{height}")
             
-            # Calculate frame sampling interval for tracking (24 fps for smooth dynamic cropping)
-            tracking_fps = 24.0  # Track at 24 fps for smooth dynamic cropping
+            # Calculate frame sampling interval for tracking (optimized fps)
+            # Use lower fps for longer videos to improve performance
+            if duration > 600:  # > 10 minutes
+                tracking_fps = 2.0  # Very low fps for long videos
+            elif duration > 300:  # > 5 minutes  
+                tracking_fps = 4.0  # Low fps for medium videos
+            else:
+                tracking_fps = 8.0  # Higher fps for short videos
+            
+            logger.info(f"Adaptive tracking FPS: {tracking_fps:.1f} fps (duration: {duration:.1f}s)")
             frame_interval = max(1, int(fps / tracking_fps))
             expected_processed_frames = total_frames // frame_interval
             

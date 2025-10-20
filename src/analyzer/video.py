@@ -80,8 +80,9 @@ class VideoExporter:
         # Perform object tracking analysis if enabled
         tracking_data = None
         if self.config.enable_object_tracking and self.object_tracker:
-            logger.info("Performing object tracking analysis for dynamic cropping")
-            tracking_data = self.object_tracker.analyze_video_tracking(input_video_path)
+            logger.info("Performing segment-based object tracking for dynamic cropping")
+            # Use segment-based tracking for much better performance
+            tracking_data = self.object_tracker.analyze_segments_tracking(input_video_path, segments_data["segments"])
             
             # Log debug video path if available
             if tracking_data.get("debug_video_path"):
