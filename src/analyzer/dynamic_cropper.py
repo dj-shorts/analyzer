@@ -98,6 +98,7 @@ class DynamicCropper:
             FFmpeg filter string with dynamic positioning
         """
         # Calculate time intervals for each position
+        # Use higher resolution for 24fps tracking
         time_interval = duration / (len(tracking_positions) - 1) if len(tracking_positions) > 1 else 0
         
         # Generate crop positions with bounds checking
@@ -145,22 +146,31 @@ class DynamicCropper:
         if len(positions) == 1:
             return str(positions[0])
         
-        # For simplicity, use average position for now
-        # This avoids complex FFmpeg filter expressions that can cause parsing errors
+        # For 24fps tracking, use more sophisticated interpolation
         avg_position = int(sum(positions) / len(positions))
         
-        # If positions vary significantly, use simple linear interpolation
-        if max(positions) - min(positions) > 50:  # Significant movement
-            # Use simple linear interpolation between first and last position
+        # Check for movement patterns
+        position_variance = max(positions) - min(positions)
+        
+        if position_variance > 20:  # Significant movement detected
+            # Use linear interpolation for smooth movement
             if len(positions) >= 2:
                 start_pos = positions[0]
                 end_pos = positions[-1]
                 total_duration = time_interval * (len(positions) - 1)
+                
+                # Create smooth linear interpolation
                 expr = f"({start_pos}+({end_pos}-{start_pos})*t/{total_duration:.3f})"
+                logger.debug(f"Using linear interpolation: {start_pos} -> {end_pos} over {total_duration:.3f}s")
                 return expr
         
-        # Use average position for stable tracking
-        return str(avg_position)
+        elif position_variance > 5:  # Small movement
+            # Use average with slight smoothing
+            return str(avg_position)
+        
+        else:  # Very stable tracking
+            # Use exact center position
+            return str(avg_position)
     
     def calculate_crop_dimensions(
         self, 

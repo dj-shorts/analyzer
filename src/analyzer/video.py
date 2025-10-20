@@ -82,6 +82,10 @@ class VideoExporter:
         if self.config.enable_object_tracking and self.object_tracker:
             logger.info("Performing object tracking analysis for dynamic cropping")
             tracking_data = self.object_tracker.analyze_video_tracking(input_video_path)
+            
+            # Log debug video path if available
+            if tracking_data.get("debug_video_path"):
+                logger.info(f"Debug tracking video saved: {tracking_data['debug_video_path']}")
         
         exported_clips = []
         export_errors = []

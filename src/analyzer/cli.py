@@ -154,6 +154,11 @@ def setup_logging(verbose: bool = False) -> None:
     is_flag=True,
     help="Disable fallback to center crop when tracking fails"
 )
+@click.option(
+    "--debug-tracking",
+    is_flag=True,
+    help="Enable debug visualization of object tracking"
+)
 def main(
     input: Path,
     clips: int,
@@ -178,6 +183,7 @@ def main(
     tracking_smoothness: float,
     tracking_confidence: float,
     no_fallback_center: bool,
+    debug_tracking: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -227,6 +233,7 @@ def main(
             tracking_smoothness=tracking_smoothness,
             tracking_confidence_threshold=tracking_confidence,
             fallback_to_center=not no_fallback_center,
+            debug_tracking=debug_tracking,
         )
         
         # Create and run analyzer
@@ -251,6 +258,8 @@ def main(
                 console.print(f"  • Object tracking: Yes")
                 console.print(f"  • Tracking smoothness: {tracking_smoothness}")
                 console.print(f"  • Tracking confidence: {tracking_confidence}")
+                if debug_tracking:
+                    console.print(f"  • Debug tracking: Yes")
         if progress_events:
             console.print(f"  • Progress events: Yes")
         
