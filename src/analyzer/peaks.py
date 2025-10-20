@@ -138,14 +138,13 @@ class PeakPicker:
                 final_scores.append(local_peak_score)
                 seed_flags.append(True)
         
-        # Add original peaks that don't conflict with seeds
+        # Add original peaks that don't conflict with seeds or existing peaks
         for i, (peak_time, peak_score) in enumerate(zip(peak_times, peak_scores)):
-            # Check if this peak conflicts with any seed-based peak
+            # Check if this peak conflicts with any existing peak
             conflicts = False
-            for seed_peak in final_peaks:
-                # Convert spacing from frames to seconds
-                spacing_seconds = self.config.peak_spacing * hop_length / sr
-                if abs(peak_time - seed_peak) < spacing_seconds:
+            for existing_peak in final_peaks:
+                # Use minimum clip separation (60 seconds by default)
+                if abs(peak_time - existing_peak) < self.config.min_clip_separation:
                     conflicts = True
                     break
             

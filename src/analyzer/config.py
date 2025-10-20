@@ -24,6 +24,7 @@ class Config(BaseModel):
     
     # Peak detection parameters
     peak_spacing: int = Field(default=80, gt=0, description="Minimum spacing between peaks in frames")
+    min_clip_separation: float = Field(default=60.0, gt=0, description="Minimum separation between clips in seconds")
     
     # Feature flags
     with_motion: bool = Field(default=False, description="Include motion analysis")
