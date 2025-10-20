@@ -132,6 +132,28 @@ def setup_logging(verbose: bool = False) -> None:
     is_flag=True,
     help="Enable progress events in stdout for SSE"
 )
+@click.option(
+    "--enable-object-tracking",
+    is_flag=True,
+    help="Enable dynamic object tracking for video export"
+)
+@click.option(
+    "--tracking-smoothness",
+    type=float,
+    default=0.8,
+    help="Tracking smoothness factor (0.0-1.0, default: 0.8)"
+)
+@click.option(
+    "--tracking-confidence",
+    type=float,
+    default=0.5,
+    help="Minimum confidence threshold for object detection (0.0-1.0, default: 0.5)"
+)
+@click.option(
+    "--no-fallback-center",
+    is_flag=True,
+    help="Disable fallback to center crop when tracking fails"
+)
 def main(
     input: Path,
     clips: int,
@@ -152,6 +174,10 @@ def main(
     export_format: str,
     auto_reframe: bool,
     progress_events: bool,
+    enable_object_tracking: bool,
+    tracking_smoothness: float,
+    tracking_confidence: float,
+    no_fallback_center: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -197,6 +223,10 @@ def main(
             export_format=export_format.lower(),
             auto_reframe=auto_reframe,
             progress_events=progress_events,
+            enable_object_tracking=enable_object_tracking,
+            tracking_smoothness=tracking_smoothness,
+            tracking_confidence_threshold=tracking_confidence,
+            fallback_to_center=not no_fallback_center,
         )
         
         # Create and run analyzer
@@ -217,6 +247,10 @@ def main(
             console.print(f"  • Export directory: {export_dir}")
             if auto_reframe:
                 console.print(f"  • Auto-reframe: Yes")
+            if enable_object_tracking:
+                console.print(f"  • Object tracking: Yes")
+                console.print(f"  • Tracking smoothness: {tracking_smoothness}")
+                console.print(f"  • Tracking confidence: {tracking_confidence}")
         if progress_events:
             console.print(f"  • Progress events: Yes")
         
