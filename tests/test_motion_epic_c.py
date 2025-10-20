@@ -28,7 +28,6 @@ class TestMotionDetectorEpicC:
         
         assert detector.config == config
         assert isinstance(detector.flow_params, dict)
-        assert detector.target_fps == 4.0
         assert detector.motion_window_size == 0.5
     
     def test_normalize_motion_scores(self):
@@ -144,7 +143,7 @@ class TestMotionDetectorEpicC:
         assert fallback["motion_available"] is False
         assert len(fallback["motion_scores"]) == 1
         assert fallback["motion_scores"][0] == 0.5  # Neutral score
-        assert fallback["sample_rate"] == detector.target_fps
+        assert fallback["sample_rate"] == 4.0  # Default motion analysis FPS
     
     @patch('cv2.VideoCapture')
     def test_extract_motion_features_fallback(self, mock_video_capture):
