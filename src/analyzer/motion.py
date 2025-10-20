@@ -68,6 +68,18 @@ class MotionDetector:
             # Very long videos (> 1 hour): reduce to 1 fps
             return 1.0
     
+    def analyze_motion(self, video_path: Path) -> Dict[str, Any]:
+        """
+        Analyze motion in video file.
+        
+        Args:
+            video_path: Path to input video file
+            
+        Returns:
+            Dict containing motion analysis results
+        """
+        return self.extract_motion_features(video_path)
+    
     def extract_motion_features(self, video_path: Path) -> Dict[str, Any]:
         """
         Extract motion features from video using optical flow.
