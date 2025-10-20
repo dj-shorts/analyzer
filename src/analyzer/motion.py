@@ -313,6 +313,16 @@ class MotionDetector:
         motion_scores = motion_data["motion_scores"]
         motion_times = motion_data["motion_times"]
         
+        # Debug: check data types
+        logger.debug(f"Motion scores type: {type(motion_scores)}, shape: {np.array(motion_scores).shape if hasattr(motion_scores, '__len__') else 'scalar'}")
+        logger.debug(f"Motion times type: {type(motion_times)}, shape: {np.array(motion_times).shape if hasattr(motion_times, '__len__') else 'scalar'}")
+        
+        # Ensure we have numpy arrays
+        if not isinstance(motion_scores, np.ndarray):
+            motion_scores = np.array(motion_scores)
+        if not isinstance(motion_times, np.ndarray):
+            motion_times = np.array(motion_times)
+        
         if len(motion_scores) <= 1:
             # Not enough motion data, return neutral scores
             return np.full(len(audio_times), 0.5)

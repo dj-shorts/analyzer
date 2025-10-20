@@ -40,8 +40,8 @@ class PeakPicker:
         sr = novelty_data.get("sample_rate", 22050)
         hop_length = novelty_data.get("hop_length", 512)
         
-        # Convert spacing from frames to samples
-        spacing_frames = int(self.config.peak_spacing * hop_length / sr)
+        # Use peak spacing directly (already in frames)
+        spacing_frames = int(self.config.peak_spacing)
         
         # Find peaks using scipy
         peaks, properties = find_peaks(
