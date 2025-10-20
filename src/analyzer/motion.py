@@ -36,9 +36,37 @@ class MotionDetector:
             'flags': 0
         }
         
-        # Motion analysis parameters
-        self.target_fps = 4.0  # Target 4 fps for motion analysis
+        # Motion analysis parameters - adaptive based on video duration
+        self.base_target_fps = 4.0  # Base 4 fps for motion analysis
         self.motion_window_size = 0.5  # 0.5 second smoothing window
+        
+        # Adaptive sampling for long videos
+        self.long_video_threshold = 1800  # 30 minutes
+        self.very_long_video_threshold = 3600  # 1 hour
+        self.min_target_fps = 1.0  # Minimum 1 fps for very long videos
+        self.max_target_fps = 6.0  # Maximum 6 fps for short videos
+    
+    def _calculate_adaptive_fps(self, duration: float) -> float:
+        """
+        Calculate adaptive target FPS based on video duration.
+        
+        For long videos, reduce FPS to speed up processing while maintaining quality.
+        
+        Args:
+            duration: Video duration in seconds
+            
+        Returns:
+            Target FPS for motion analysis
+        """
+        if duration <= self.long_video_threshold:
+            # Short videos (< 30 min): use base FPS
+            return self.base_target_fps
+        elif duration <= self.very_long_video_threshold:
+            # Long videos (30 min - 1 hour): reduce to 2 fps
+            return 2.0
+        else:
+            # Very long videos (> 1 hour): reduce to 1 fps
+            return 1.0
     
     def extract_motion_features(self, video_path: Path) -> Dict[str, Any]:
         """
@@ -72,10 +100,14 @@ class MotionDetector:
             
             duration = total_frames / fps
             
-            logger.info(f"Video properties: {fps:.2f} fps, {total_frames} frames, {duration:.2f}s")
+            # Calculate adaptive target FPS based on video duration
+            target_fps = self._calculate_adaptive_fps(duration)
             
-            # Calculate frame sampling interval for target fps
-            frame_interval = max(1, int(fps / self.target_fps))
+            logger.info(f"Video properties: {fps:.2f} fps, {total_frames} frames, {duration:.2f}s")
+            logger.info(f"Adaptive motion analysis: using {target_fps:.1f} fps (duration-based optimization)")
+            
+            # Calculate frame sampling interval for adaptive target fps
+            frame_interval = max(1, int(fps / target_fps))
             expected_processed_frames = total_frames // frame_interval
             
             logger.info(f"Processing motion analysis: sampling every {frame_interval} frames (~{expected_processed_frames} frames to process)")
@@ -157,10 +189,11 @@ class MotionDetector:
             return {
                 "motion_scores": motion_scores_smooth,
                 "motion_times": frame_times,
-                "sample_rate": self.target_fps,
+                "sample_rate": target_fps,
                 "total_frames": processed_count,
                 "video_duration": duration,
-                "motion_available": True
+                "motion_available": True,
+                "adaptive_fps": True
             }
             
         except Exception as e:
@@ -239,10 +272,11 @@ class MotionDetector:
         return {
             "motion_scores": np.array([0.5]),  # Neutral motion score
             "motion_times": np.array([0.0]),
-            "sample_rate": self.target_fps,
+            "sample_rate": self.base_target_fps,
             "total_frames": 1,
             "video_duration": 0.0,
-            "motion_available": False
+            "motion_available": False,
+            "adaptive_fps": False
         }
     
     def interpolate_to_audio_timeline(
