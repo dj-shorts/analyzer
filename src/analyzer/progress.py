@@ -31,6 +31,7 @@ class AnalysisStage(str, Enum):
     """Defines the stages of the analysis pipeline."""
     INITIALIZATION = "initialization"
     AUDIO_EXTRACTION = "audio_extraction"
+    MOTION_ANALYSIS = "motion_analysis"
     BEAT_TRACKING = "beat_tracking"
     NOVELTY_DETECTION = "novelty_detection"
     PEAK_DETECTION = "peak_detection"  # Alias for PEAK_PICKING
@@ -53,14 +54,15 @@ class ProgressEmitter:
         self.stage_progress_ranges = {
             AnalysisStage.INITIALIZATION: (0, 5),
             AnalysisStage.AUDIO_EXTRACTION: (5, 15),
-            AnalysisStage.BEAT_TRACKING: (15, 25),
-            AnalysisStage.NOVELTY_DETECTION: (15, 35),  # Changed from (30, 50) to (15, 35)
-            AnalysisStage.PEAK_DETECTION: (35, 50),
-            AnalysisStage.PEAK_PICKING: (35, 50),
-            AnalysisStage.SEGMENT_BUILDING: (50, 65),
-            AnalysisStage.BEAT_QUANTIZATION: (65, 75),
-            AnalysisStage.VIDEO_EXPORT: (75, 90),
-            AnalysisStage.RESULT_EXPORT: (90, 100),
+            AnalysisStage.MOTION_ANALYSIS: (15, 25),
+            AnalysisStage.BEAT_TRACKING: (25, 35),
+            AnalysisStage.NOVELTY_DETECTION: (35, 50),
+            AnalysisStage.PEAK_DETECTION: (50, 65),
+            AnalysisStage.PEAK_PICKING: (50, 65),
+            AnalysisStage.SEGMENT_BUILDING: (65, 80),
+            AnalysisStage.BEAT_QUANTIZATION: (80, 85),
+            AnalysisStage.VIDEO_EXPORT: (85, 95),
+            AnalysisStage.RESULT_EXPORT: (95, 100),
             AnalysisStage.COMPLETION: (100, 100),
         }
     
@@ -98,6 +100,7 @@ class ProgressEmitter:
         if message is None:
             stage_messages = {
                 AnalysisStage.AUDIO_EXTRACTION: "Extracting audio from video...",
+                AnalysisStage.MOTION_ANALYSIS: "Analyzing motion patterns...",
                 AnalysisStage.BEAT_TRACKING: "Analyzing beat patterns...",
                 AnalysisStage.NOVELTY_DETECTION: "Analyzing audio novelty...",
                 AnalysisStage.PEAK_DETECTION: "Detecting peaks...",

@@ -195,7 +195,9 @@ class TestProgressEmitterEpicE2:
         # Test various stages
         assert emitter.get_stage_progress_range(AnalysisStage.INITIALIZATION) == (0, 5)
         assert emitter.get_stage_progress_range(AnalysisStage.AUDIO_EXTRACTION) == (5, 15)
-        assert emitter.get_stage_progress_range(AnalysisStage.NOVELTY_DETECTION) == (15, 35)
+        assert emitter.get_stage_progress_range(AnalysisStage.MOTION_ANALYSIS) == (15, 25)
+        assert emitter.get_stage_progress_range(AnalysisStage.BEAT_TRACKING) == (25, 35)
+        assert emitter.get_stage_progress_range(AnalysisStage.NOVELTY_DETECTION) == (35, 50)
         assert emitter.get_stage_progress_range(AnalysisStage.COMPLETION) == (100, 100)
 
     def test_calculate_stage_progress(self):
@@ -206,9 +208,9 @@ class TestProgressEmitterEpicE2:
         progress = emitter.calculate_stage_progress(AnalysisStage.AUDIO_EXTRACTION, 0.5)
         assert progress == 10  # 5 + (0.5 * 10) = 10
         
-        # Test novelty detection stage (15-35%)
+        # Test novelty detection stage (35-50%)
         progress = emitter.calculate_stage_progress(AnalysisStage.NOVELTY_DETECTION, 0.25)
-        assert progress == 20  # 15 + (0.25 * 20) = 20
+        assert progress == 38  # 35 + (0.25 * 15) = 38.75 ≈ 38
         
         # Test completion stage (100-100%)
         progress = emitter.calculate_stage_progress(AnalysisStage.COMPLETION, 1.0)
