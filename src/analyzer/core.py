@@ -4,7 +4,6 @@ Core analyzer module for MVP Analyzer.
 
 import logging
 from typing import Dict, Any
-import numpy as np
 
 from .config import Config
 from .audio import AudioExtractor
@@ -16,6 +15,7 @@ from .beats import BeatTracker, BeatQuantizer
 from .motion import MotionDetector
 from .video import VideoExporter
 from .progress import ProgressEmitter, AnalysisStage
+from .cancellation import managed_resources, ProcessMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,12 @@ class Analyzer:
         self.segment_builder = SegmentBuilder(config)
         self.result_exporter = ResultExporter(config)
         
-        # Initialize motion analysis if enabled
+        # Initialize beat tracking components if enabled
+        if config.align_to_beat:
+            self.beat_tracker = BeatTracker(config)
+            self.beat_quantizer = BeatQuantizer(config)
+        
+        # Initialize motion detection if enabled
         if config.with_motion:
             self.motion_detector = MotionDetector(config)
         
@@ -42,14 +47,8 @@ class Analyzer:
         if config.export_video:
             self.video_exporter = VideoExporter(config)
         
-        # Initialize progress emitter if enabled
-        if config.progress_events:
-            self.progress_emitter = ProgressEmitter()
-        
-        # Initialize beat tracking components if enabled
-        if config.align_to_beat:
-            self.beat_tracker = BeatTracker(config)
-            self.beat_quantizer = BeatQuantizer(config)
+        # Initialize progress emitter
+        self.progress_emitter = ProgressEmitter(enabled=config.progress_events)
     
     def analyze(self) -> Dict[str, Any]:
         """
@@ -60,126 +59,100 @@ class Analyzer:
         """
         logger.info("Starting analysis pipeline")
         
-        try:
-            # Start progress tracking if enabled
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.start_stage(AnalysisStage.AUDIO_EXTRACTION)
-            
-            # Step 1: Extract audio from video
-            logger.info("Step 1: Extracting audio from video")
-            audio_data = self.audio_extractor.extract()
-            
-            # Complete audio extraction stage
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage(AnalysisStage.AUDIO_EXTRACTION)
-            
-            # Step 2: Motion analysis (if enabled)
-            motion_data = None
-            if hasattr(self, 'motion_detector'):
-                if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.start_stage(AnalysisStage.MOTION_ANALYSIS)
-                logger.info("Step 2: Motion analysis")
-                motion_data = self.motion_detector.extract_motion_features(self.config.input_path)
-                if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.complete_stage(AnalysisStage.MOTION_ANALYSIS)
-            
-            # Step 3: Beat tracking (if enabled)
-            beat_data = None
-            if self.config.align_to_beat:
-                if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.start_stage(AnalysisStage.BEAT_TRACKING)
-                logger.info("Step 3: Beat tracking and BPM estimation")
-                beat_data = self.beat_tracker.track_beats(audio_data)
-                if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.complete_stage(AnalysisStage.BEAT_TRACKING)
-            
-            # Step 4: Compute novelty scores
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.start_stage(AnalysisStage.NOVELTY_DETECTION)
-            logger.info("Step 4: Computing novelty scores")
-            novelty_scores = self.novelty_detector.compute_novelty(audio_data)
-            
-            # Combine audio and motion scores if motion analysis was performed
-            if motion_data and motion_data.get("motion_available", False):
-                logger.info("Combining audio and motion scores (60/40 blend)")
-                # Use novelty timeline instead of raw audio samples
-                novelty_timeline = novelty_scores["time_axis"]
+        # Use resource management context manager
+        with managed_resources(
+            max_threads=self.config.threads,
+            ram_limit=self.config.ram_limit
+        ) as resource_manager:
+            try:
+                # Start initialization stage
+                self.progress_emitter.start_stage(AnalysisStage.INITIALIZATION)
+                self.progress_emitter.update_progress(0, "Initializing analysis pipeline...")
                 
-                # Interpolate motion scores to novelty timeline
-                motion_scores = self.motion_detector.interpolate_to_audio_timeline(
-                    motion_data, novelty_timeline
-                )
-                # Combine with novelty scores
-                combined_scores = self.motion_detector.combine_audio_and_motion_scores(
-                    novelty_scores["novelty_scores"], motion_scores
-                )
-                # Update novelty scores with combined values
-                novelty_scores["novelty_scores"] = combined_scores
-            
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage(AnalysisStage.NOVELTY_DETECTION)
-            
-            # Step 5: Find peaks
-            if hasattr(self, 'progress_emitter'):
+                # Step 1: Extract audio from video
+                self.progress_emitter.start_stage(AnalysisStage.AUDIO_EXTRACTION)
+                logger.info("Step 1: Extracting audio from video")
+                audio_data = self.audio_extractor.extract()
+                self.progress_emitter.complete_stage("Audio extraction completed")
+                
+                # Step 2: Beat tracking (if enabled)
+                beat_data = None
+                if self.config.align_to_beat:
+                    self.progress_emitter.start_stage(AnalysisStage.BEAT_TRACKING)
+                    logger.info("Step 2: Beat tracking and BPM estimation")
+                    beat_data = self.beat_tracker.track_beats(audio_data)
+                    self.progress_emitter.complete_stage("Beat tracking completed")
+                
+                # Step 3: Motion analysis (if enabled)
+                motion_data = None
+                if self.config.with_motion:
+                    logger.info("Step 3: Motion analysis")
+                    motion_data = self.motion_detector.extract_motion_features(self.config.input_path)
+                
+                # Step 4: Compute novelty scores
+                self.progress_emitter.start_stage(AnalysisStage.NOVELTY_DETECTION)
+                logger.info("Step 4: Computing novelty scores")
+                novelty_scores = self.novelty_detector.compute_novelty(audio_data)
+                
+                # Combine motion and novelty scores if motion analysis is enabled
+                if motion_data:
+                    novelty_scores = self.motion_detector.combine_audio_and_motion_scores(novelty_scores, motion_data)
+                
+                self.progress_emitter.complete_stage("Novelty detection completed")
+                
+                # Step 5: Find peaks
                 self.progress_emitter.start_stage(AnalysisStage.PEAK_DETECTION)
-            logger.info("Step 5: Finding peaks")
-            peaks = self.peak_picker.find_peaks(novelty_scores)
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage(AnalysisStage.PEAK_DETECTION)
-            
-            # Step 6: Build segments
-            if hasattr(self, 'progress_emitter'):
+                logger.info("Step 5: Finding peaks")
+                peaks = self.peak_picker.find_peaks(novelty_scores)
+                self.progress_emitter.complete_stage("Peak detection completed")
+                
+                # Step 6: Build segments
                 self.progress_emitter.start_stage(AnalysisStage.SEGMENT_BUILDING)
-            logger.info("Step 6: Building segments")
-            segments = self.segment_builder.build_segments(peaks)
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage(AnalysisStage.SEGMENT_BUILDING)
-            
-            # Step 7: Beat quantization (if enabled)
-            if self.config.align_to_beat and beat_data:
-                logger.info("Step 7: Quantizing segments to beat boundaries")
-                segments = self._quantize_segments(segments, beat_data)
-            
-            # Step 8: Export results
-            if hasattr(self, 'progress_emitter'):
+                logger.info("Step 6: Building segments")
+                segments = self.segment_builder.build_segments(peaks)
+                self.progress_emitter.complete_stage("Segment building completed")
+                
+                # Step 7: Beat quantization (if enabled)
+                if self.config.align_to_beat and beat_data:
+                    self.progress_emitter.start_stage(AnalysisStage.BEAT_QUANTIZATION)
+                    logger.info("Step 7: Quantizing segments to beat boundaries")
+                    segments = self._quantize_segments(segments, beat_data)
+                    self.progress_emitter.complete_stage("Beat quantization completed")
+                
+                # Step 8: Export results
                 self.progress_emitter.start_stage(AnalysisStage.RESULT_EXPORT)
-            logger.info("Step 8: Exporting results")
-            results = self.result_exporter.export(segments, audio_data)
-            if hasattr(self, 'progress_emitter'):
-                self.progress_emitter.complete_stage(AnalysisStage.RESULT_EXPORT)
-            
-            # Step 9: Video export (if enabled)
-            if hasattr(self, 'video_exporter'):
-                if hasattr(self, 'progress_emitter'):
+                logger.info("Step 8: Exporting results")
+                results = self.result_exporter.export(segments, audio_data)
+                self.progress_emitter.complete_stage("Result export completed")
+                
+                # Step 9: Video export (if enabled)
+                if self.config.export_video:
                     self.progress_emitter.start_stage(AnalysisStage.VIDEO_EXPORT)
-                logger.info("Step 9: Exporting video clips")
-                video_results = self.video_exporter.export_clips(segments, self.config.input_path, self.config.export_dir)
-                results["video_export"] = video_results
-                if hasattr(self, 'progress_emitter'):
-                    self.progress_emitter.complete_stage(AnalysisStage.VIDEO_EXPORT)
-            
-            # Add motion data to results if available
-            if motion_data:
-                results["motion_data"] = motion_data
-            
-            # Add beat data to results if available
-            if beat_data:
-                results["beat_data"] = beat_data
-            
-            # Complete analysis
-            if hasattr(self, 'progress_emitter'):
+                    logger.info("Step 9: Exporting video clips")
+                    video_results = self.video_exporter.export_clips(segments)
+                    results["video_export"] = video_results
+                    self.progress_emitter.complete_stage("Video export completed")
+                
+                # Add beat data to results if available
+                if beat_data:
+                    results["beat_data"] = beat_data
+                
+                # Complete analysis
                 self.progress_emitter.start_stage(AnalysisStage.COMPLETION)
-                self.progress_emitter.complete_stage(AnalysisStage.COMPLETION)
-            
-            logger.info("Analysis pipeline completed successfully")
-            return results
-            
-        except Exception as e:
-            logger.error(f"Analysis pipeline failed: {e}", exc_info=True)
-            # Emit error event if progress tracking is enabled
-            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.update_progress(100, "Analysis completed successfully")
+                self.progress_emitter.complete_stage("Analysis pipeline completed successfully")
+                
+                logger.info("Analysis pipeline completed successfully")
+                return results
+                
+            except KeyboardInterrupt:
+                logger.info("Analysis cancelled by user")
+                self.progress_emitter.emit_error("Analysis cancelled by user")
+                raise
+            except Exception as e:
+                logger.error(f"Analysis pipeline failed: {e}", exc_info=True)
                 self.progress_emitter.emit_error(str(e))
-            raise
+                raise
     
     def _quantize_segments(self, segments: Dict[str, Any], beat_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -192,40 +165,28 @@ class Analyzer:
         Returns:
             Updated segments with quantized boundaries
         """
-        logger.info("Quantizing segment boundaries to beat grid")
+        if not segments or "segments" not in segments:
+            return segments
         
         quantized_segments = []
-        
-        for segment in segments.get("segments", []):
-            start_time = segment["start"]
-            duration = segment["length"]
+        for segment in segments["segments"]:
+            quantized = self.beat_quantizer.quantize_clip(
+                start_time=segment["start"],
+                duration=segment["end"] - segment["start"],
+                beat_data=beat_data
+            )
             
-            # Quantize this segment
-            quantized = self.beat_quantizer.quantize_clip(start_time, duration, beat_data)
-            
-            # Create updated segment
+            # Update segment with quantized values
             updated_segment = segment.copy()
-            updated_segment.update({
-                "start": quantized["start_time"],
-                "length": quantized["duration"],
-                "end": quantized["start_time"] + quantized["duration"],
-                "aligned_to_beat": quantized["aligned"],
-                "beat_confidence": quantized["confidence"]
-            })
-            
-            # Add quantization details if aligned
-            if quantized["aligned"]:
-                updated_segment.update({
-                    "original_start": quantized["original_start"],
-                    "original_duration": quantized["original_duration"],
-                    "bars": quantized["bars"]
-                })
+            updated_segment["start"] = quantized["start_time"]
+            updated_segment["end"] = quantized["start_time"] + quantized["duration"]
+            updated_segment["center"] = (updated_segment["start"] + updated_segment["end"]) / 2
+            updated_segment["length"] = updated_segment["end"] - updated_segment["start"]
+            updated_segment["aligned"] = quantized["aligned"]
             
             quantized_segments.append(updated_segment)
         
-        # Update segments data
-        updated_segments = segments.copy()
-        updated_segments["segments"] = quantized_segments
-        updated_segments["beat_aligned"] = True
-        
-        return updated_segments
+        return {
+            "segments": quantized_segments,
+            "metadata": segments.get("metadata", {})
+        }
