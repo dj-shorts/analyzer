@@ -11,7 +11,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from src.analyzer.metrics import (
+from analyzer.metrics import (
     MetricsCollector, AnalysisMetrics, AnalysisStage, 
     format_prometheus_metrics, StageTiming
 )
