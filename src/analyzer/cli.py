@@ -30,7 +30,13 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 @click.command()
-@click.argument("input", type=click.Path(exists=True, path_type=Path))
+@click.argument("input", type=str)
+@click.option(
+    "--download-dir",
+    type=click.Path(path_type=Path),
+    default="downloads",
+    help="Directory for downloaded videos (default: downloads)"
+)
 @click.option(
     "--clips", 
     "-k", 
@@ -133,7 +139,8 @@ def setup_logging(verbose: bool = False) -> None:
     help="Export Prometheus metrics to file"
 )
 def main(
-    input: Path,
+    input: str,
+    download_dir: Path,
     clips: int,
     min_len: float,
     max_len: float,
@@ -156,13 +163,52 @@ def main(
     """
     MVP Analyzer - Extract highlights from music videos.
     
-    INPUT: Path to input video file (mp4, mov, etc.)
+    INPUT: Path to input video file (mp4, mov, etc.) or URL (YouTube, Google Drive, etc.)
     """
     setup_logging(verbose)
     
     logger = logging.getLogger(__name__)
     
     try:
+        # Determine if input is a URL or file path
+        input_path = Path(input)
+        video_path = None
+        
+        if input.startswith(('http://', 'https://')):
+            # Input is a URL - download the video
+            from .video_downloader import VideoDownloader, is_video_url
+            
+            if not is_video_url(input):
+                console.print(f"[red]Error: Unsupported video URL: {input}[/red]")
+                console.print("[yellow]Supported platforms: YouTube, Vimeo, Google Drive, OneDrive, Dropbox, direct video links[/yellow]")
+                sys.exit(1)
+            
+            console.print(f"[blue]Downloading video from: {input}[/blue]")
+            downloader = VideoDownloader(download_dir)
+            
+            # Generate output filename based on URL
+            output_filename = f"downloaded_video_{hash(input) % 10000}.mp4"
+            output_path = download_dir / output_filename
+            
+            download_result = downloader.download_video(input, output_path)
+            
+            if not download_result["success"]:
+                console.print(f"[red]Download failed: {download_result['error']}[/red]")
+                sys.exit(1)
+            
+            video_path = download_result["file_path"]
+            console.print(f"[green]✓ Video downloaded: {video_path}[/green]")
+            console.print(f"[blue]Title: {download_result['title']}[/blue]")
+            console.print(f"[blue]Duration: {download_result['duration']}s[/blue]")
+            
+        elif input_path.exists():
+            # Input is a file path
+            video_path = input_path
+        else:
+            console.print(f"[red]Error: File not found: {input}[/red]")
+            console.print("[yellow]Provide either a valid file path or a supported video URL[/yellow]")
+            sys.exit(1)
+        
         # Parse seed timestamps if provided
         seed_timestamps = []
         if seeds:
@@ -179,7 +225,7 @@ def main(
         
         # Create configuration
         config = Config(
-            input_path=input,
+            input_path=video_path,
             clips_count=clips,
             min_clip_length=min_len,
             max_clip_length=max_len,
@@ -201,7 +247,7 @@ def main(
         # Create and run analyzer
         analyzer = Analyzer(config)
         
-        console.print(f"[bold green]Starting analysis of {input}[/bold green]")
+        console.print(f"[bold green]Starting analysis of {video_path}[/bold green]")
         console.print(f"[blue]Configuration:[/blue]")
         console.print(f"  • Clips: {clips}")
         console.print(f"  • Length: {min_len}-{max_len}s")
