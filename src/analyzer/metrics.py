@@ -23,6 +23,7 @@ class AnalysisStage(Enum):
     SEGMENT_BUILDING = "segment_building"
     MOTION_ANALYSIS = "motion_analysis"
     EXPORT = "export"
+    VIDEO_EXPORT = "video_export"
     TOTAL = "total"
 
 

@@ -11,6 +11,7 @@ from .novelty import NoveltyDetector
 from .peaks import PeakPicker
 from .segments import SegmentBuilder
 from .export import ResultExporter
+from .video import VideoExporter
 from .beats import BeatTracker, BeatQuantizer
 from .metrics import MetricsCollector, AnalysisStage as MetricsStage
 from .progress import ProgressEmitter, AnalysisStage as ProgressStage
@@ -40,6 +41,12 @@ class Analyzer:
         self.peak_picker = PeakPicker(config)
         self.segment_builder = SegmentBuilder(config)
         self.result_exporter = ResultExporter(config)
+        
+        # Initialize video exporter if enabled
+        if config.export_video:
+            self.video_exporter = VideoExporter(config)
+        else:
+            self.video_exporter = None
         
         # Initialize beat tracking components if enabled
         if config.align_to_beat:
@@ -151,6 +158,20 @@ class Analyzer:
             results = self.result_exporter.export(segments, audio_data, final_metrics.to_json_metrics())
             self.metrics_collector.finish_stage(MetricsStage.EXPORT)
             self.progress_emitter.complete_stage()
+            
+            # Step 8: Video export (if enabled)
+            if self.video_exporter:
+                logger.info("Step 8: Exporting video clips")
+                self.progress_emitter.start_stage(ProgressStage.VIDEO_EXPORT)
+                self.metrics_collector.start_stage(MetricsStage.VIDEO_EXPORT)
+                
+                video_results = self.video_exporter.export_clips(segments, self.config.input_path, self.config.export_dir)
+                results["video_export"] = video_results
+                
+                self.metrics_collector.finish_stage(MetricsStage.VIDEO_EXPORT)
+                self.progress_emitter.complete_stage()
+                
+                logger.info(f"Video export completed: {video_results['exported_clips']}/{video_results['total_clips']} clips exported")
             
             # Add beat data to results if available
             if beat_data:
