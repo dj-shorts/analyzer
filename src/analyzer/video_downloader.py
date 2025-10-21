@@ -150,22 +150,30 @@ class VideoDownloader:
         if output_path and output_path.exists():
             return output_path
         
-        # Try to find file based on title
-        title = info.get('title', 'Unknown')
-        # Clean title for filename
-        safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        # Determine search directory and base name based on output_path
+        if output_path:
+            # For custom paths, search in the output directory
+            search_dir = output_path.parent
+            base_name = output_path.stem  # filename without extension
+        else:
+            # For default downloads, search in download_dir by title
+            search_dir = self.download_dir
+            title = info.get('title', 'Unknown')
+            # Clean title for filename
+            safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
+            base_name = safe_title
         
         # Look for common video extensions
         extensions = ['.mp4', '.webm', '.mkv', '.avi', '.mov', '.m4v']
         
         for ext in extensions:
-            filename = f"{safe_title}{ext}"
-            file_path = self.download_dir / filename
+            filename = f"{base_name}{ext}"
+            file_path = search_dir / filename
             if file_path.exists():
                 return file_path
         
-        # If not found by title, look for any video file in download dir
-        for file_path in self.download_dir.iterdir():
+        # If not found by name, look for any video file in search directory
+        for file_path in search_dir.iterdir():
             if file_path.is_file() and file_path.suffix.lower() in extensions:
                 # Check if it's recent (downloaded in last 5 minutes)
                 import time
