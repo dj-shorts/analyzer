@@ -5,9 +5,15 @@ This module handles video clip export functionality.
 """
 
 import logging
-from typing import Dict, Any
+import subprocess
+import json
+from pathlib import Path
+from typing import Dict, Any, Optional, List, Tuple
 
 from .config import Config
+from .people_detector import PeopleDetector
+from .object_tracker import ObjectTracker
+from .dynamic_cropper import DynamicCropper
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +24,41 @@ class VideoExporter:
     def __init__(self, config: Config):
         """Initialize the video exporter."""
         self.config = config
+        
+        # Initialize people detector if auto-reframe is enabled
+        if config.auto_reframe:
+            self.people_detector = PeopleDetector(config)
+        else:
+            self.people_detector = None
+        
+        # Initialize object tracker and dynamic cropper if object tracking is enabled
+        if config.enable_object_tracking:
+            self.object_tracker = ObjectTracker(config)
+            self.dynamic_cropper = DynamicCropper(config)
+        else:
+            self.object_tracker = None
+            self.dynamic_cropper = None
+        
+        # Format definitions
+        self.formats = {
+            "original": {"width": None, "height": None, "crop": False},
+            "vertical": {"width": 1080, "height": 1920, "crop": True},  # 9:16
+            "square": {"width": 1080, "height": 1080, "crop": True}     # 1:1
+        }
+        
+        # FFmpeg parameters for h264 transcoding
+        self.h264_params = [
+            "-c:v", "libx264",
+            "-crf", "18",
+            "-preset", "veryfast",
+            "-pix_fmt", "yuv420p"
+        ]
+        
+        # Audio codec parameters
+        self.audio_params = [
+            "-c:a", "aac",
+            "-b:a", "128k"
+        ]
     
     def export_clips(self, segments_data: Dict[str, Any], input_video_path: Path, output_dir: Path) -> Dict[str, Any]:
         """
