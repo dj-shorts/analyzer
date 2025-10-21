@@ -102,17 +102,19 @@ class Analyzer:
             # Combine audio and motion scores if motion analysis was performed
             if motion_data and motion_data.get("motion_available", False):
                 logger.info("Combining audio and motion scores (60/40 blend)")
-                # Create audio timeline from sample rate and duration
-                audio_timeline = np.linspace(0, audio_data["duration"], len(audio_data["audio"]))
+                # Use novelty timeline instead of raw audio samples
+                novelty_timeline = novelty_scores["time_axis"]
                 
-                # Interpolate motion scores to audio timeline
+                # Interpolate motion scores to novelty timeline
                 motion_scores = self.motion_detector.interpolate_to_audio_timeline(
-                    motion_data, audio_timeline
+                    motion_data, novelty_timeline
                 )
                 # Combine with novelty scores
-                novelty_scores = self.motion_detector.combine_audio_and_motion_scores(
-                    novelty_scores, motion_scores
+                combined_scores = self.motion_detector.combine_audio_and_motion_scores(
+                    novelty_scores["novelty_scores"], motion_scores
                 )
+                # Update novelty scores with combined values
+                novelty_scores["novelty_scores"] = combined_scores
             
             if hasattr(self, 'progress_emitter'):
                 self.progress_emitter.complete_stage(AnalysisStage.NOVELTY_DETECTION)
