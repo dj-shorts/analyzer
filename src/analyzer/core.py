@@ -174,6 +174,9 @@ class Analyzer:
             # Finish metrics collection after all stages complete
             final_metrics = self.metrics_collector.finish()
             
+            # Add metrics to results for CLI --metrics option
+            results["metrics"] = final_metrics.to_json_metrics()
+            
             # Add beat data to results if available
             if beat_data:
                 results["beat_data"] = beat_data
