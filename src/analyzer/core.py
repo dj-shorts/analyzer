@@ -151,11 +151,9 @@ class Analyzer:
             self.progress_emitter.start_stage(ProgressStage.RESULT_EXPORT)
             self.metrics_collector.start_stage(MetricsStage.EXPORT)
             
-            # Finish metrics collection first
-            final_metrics = self.metrics_collector.finish()
-            
-            # Export with metrics
-            results = self.result_exporter.export(segments, audio_data, final_metrics.to_json_metrics())
+            # Export with metrics (get current metrics without finishing)
+            current_metrics = self.metrics_collector.get_current_metrics()
+            results = self.result_exporter.export(segments, audio_data, current_metrics.to_json_metrics())
             self.metrics_collector.finish_stage(MetricsStage.EXPORT)
             self.progress_emitter.complete_stage()
             
@@ -172,6 +170,9 @@ class Analyzer:
                 self.progress_emitter.complete_stage()
                 
                 logger.info(f"Video export completed: {video_results['exported_clips']}/{video_results['total_clips']} clips exported")
+            
+            # Finish metrics collection after all stages complete
+            final_metrics = self.metrics_collector.finish()
             
             # Add beat data to results if available
             if beat_data:
