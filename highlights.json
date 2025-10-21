@@ -1,0 +1,123 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created_at": "2025-10-20T00:17:39.093133",
+    "input_file": "clips/youtube_shorts/clip_001_youtube_shorts.mp4",
+    "audio_duration": 29.738684807256234,
+    "sample_rate": 22050,
+    "configuration": {
+      "clips_count": 2,
+      "min_clip_length": 15.0,
+      "max_clip_length": 30.0,
+      "pre_roll": 10.0,
+      "peak_spacing": 80,
+      "with_motion": false,
+      "align_to_beat": false,
+      "seed_timestamps": []
+    }
+  },
+  "clips": [
+    {
+      "clip_id": 1,
+      "start": 0.17034013605442233,
+      "end": 23.267440989974403,
+      "center": 10.170340136054422,
+      "score": 0.5398067235946655,
+      "seed_based": false,
+      "aligned": false,
+      "length": 23.097100853919983
+    },
+    {
+      "clip_id": 2,
+      "start": 11.826757369614512,
+      "end": 34.70094430265513,
+      "center": 21.826757369614512,
+      "score": 0.5249457955360413,
+      "seed_based": false,
+      "aligned": false,
+      "length": 22.87418693304062
+    }
+  ],
+  "summary": {
+    "total_clips": 2,
+    "seed_based_clips": 0,
+    "auto_detected_clips": 2,
+    "average_score": 0.5323762595653534,
+    "total_duration": 45.9712877869606,
+    "coverage_percentage": 154.584132031769
+  },
+  "metrics": {
+    "timings": {
+      "total_duration_seconds": 0.9064021110534668,
+      "stages": {
+        "initialization": {
+          "duration_seconds": 0.0,
+          "start_time": null,
+          "end_time": null
+        },
+        "audio_extraction": {
+          "duration_seconds": 0.8973517417907715,
+          "start_time": 1760908658.187786,
+          "end_time": 1760908659.0851378
+        },
+        "novelty_detection": {
+          "duration_seconds": 0.003887176513671875,
+          "start_time": 1760908659.085491,
+          "end_time": 1760908659.089378
+        },
+        "peak_picking": {
+          "duration_seconds": 0.000982046127319336,
+          "start_time": 1760908659.0897238,
+          "end_time": 1760908659.0907059
+        },
+        "beat_tracking": {
+          "duration_seconds": 0.0,
+          "start_time": null,
+          "end_time": null
+        },
+        "segment_building": {
+          "duration_seconds": 0.0005710124969482422,
+          "start_time": 1760908659.091001,
+          "end_time": 1760908659.091572
+        },
+        "motion_analysis": {
+          "duration_seconds": 0.0,
+          "start_time": null,
+          "end_time": null
+        },
+        "export": {
+          "duration_seconds": 0.0,
+          "start_time": 1760908659.0918322,
+          "end_time": null
+        }
+      }
+    },
+    "novelty": {
+      "peaks_count": 0,
+      "frames_count": 640
+    },
+    "audio": {
+      "duration_seconds": 29.738684807256234,
+      "sample_rate_hz": 22050,
+      "bytes": 2622952
+    },
+    "video": {
+      "duration_seconds": 0.0,
+      "bytes": 0,
+      "width_pixels": 0,
+      "height_pixels": 0
+    },
+    "processing": {
+      "clips_generated": 2,
+      "segments_built": 2,
+      "memory_peak_mb": 0.0
+    },
+    "configuration": {
+      "clips_requested": 2,
+      "min_clip_length_seconds": 15.0,
+      "max_clip_length_seconds": 30.0,
+      "with_motion": false,
+      "align_to_beat": false
+    }
+  }
+}

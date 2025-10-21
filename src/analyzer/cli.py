@@ -106,58 +106,9 @@ def setup_logging(verbose: bool = False) -> None:
     help="RAM limit (e.g., '2GB')"
 )
 @click.option(
-    "--export-video",
-    is_flag=True,
-    help="Export video clips"
-)
-@click.option(
-    "--export-dir",
-    type=click.Path(path_type=Path),
-    default="clips",
-    help="Directory for exported video clips (default: clips)"
-)
-@click.option(
-    "--export-format",
-    type=click.Choice(["original", "vertical", "square"], case_sensitive=False),
-    default="original",
-    help="Export format: original (16:9), vertical (9:16), or square (1:1)"
-)
-@click.option(
-    "--auto-reframe",
-    is_flag=True,
-    help="Enable auto-reframe with HOG people detection"
-)
-@click.option(
-    "--progress-events",
-    is_flag=True,
-    help="Enable progress events in stdout for SSE"
-)
-@click.option(
-    "--enable-object-tracking",
-    is_flag=True,
-    help="Enable dynamic object tracking for video export"
-)
-@click.option(
-    "--tracking-smoothness",
-    type=float,
-    default=0.8,
-    help="Tracking smoothness factor (0.0-1.0, default: 0.8)"
-)
-@click.option(
-    "--tracking-confidence",
-    type=float,
-    default=0.5,
-    help="Minimum confidence threshold for object detection (0.0-1.0, default: 0.5)"
-)
-@click.option(
-    "--no-fallback-center",
-    is_flag=True,
-    help="Disable fallback to center crop when tracking fails"
-)
-@click.option(
-    "--debug-tracking",
-    is_flag=True,
-    help="Enable debug visualization of object tracking"
+    "--metrics", 
+    type=click.Path(path_type=Path), 
+    help="Export Prometheus metrics to file"
 )
 def main(
     input: Path,
@@ -174,16 +125,7 @@ def main(
     verbose: bool,
     threads: Optional[int],
     ram_limit: Optional[str],
-    export_video: bool,
-    export_dir: Path,
-    export_format: str,
-    auto_reframe: bool,
-    progress_events: bool,
-    enable_object_tracking: bool,
-    tracking_smoothness: float,
-    tracking_confidence: float,
-    no_fallback_center: bool,
-    debug_tracking: bool,
+    metrics: Optional[Path],
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -224,16 +166,6 @@ def main(
             output_csv=out_csv,
             threads=threads,
             ram_limit=ram_limit,
-            export_video=export_video,
-            export_dir=export_dir,
-            export_format=export_format.lower(),
-            auto_reframe=auto_reframe,
-            progress_events=progress_events,
-            enable_object_tracking=enable_object_tracking,
-            tracking_smoothness=tracking_smoothness,
-            tracking_confidence_threshold=tracking_confidence,
-            fallback_to_center=not no_fallback_center,
-            debug_tracking=debug_tracking,
         )
         
         # Create and run analyzer
@@ -249,19 +181,6 @@ def main(
         console.print(f"  • Beat alignment: {'Yes' if align_to_beat else 'No'}")
         if seed_timestamps:
             console.print(f"  • Seeds: {len(seed_timestamps)} timestamps")
-        if export_video:
-            console.print(f"  • Video export: Yes ({export_format} format)")
-            console.print(f"  • Export directory: {export_dir}")
-            if auto_reframe:
-                console.print(f"  • Auto-reframe: Yes")
-            if enable_object_tracking:
-                console.print(f"  • Object tracking: Yes")
-                console.print(f"  • Tracking smoothness: {tracking_smoothness}")
-                console.print(f"  • Tracking confidence: {tracking_confidence}")
-                if debug_tracking:
-                    console.print(f"  • Debug tracking: Yes")
-        if progress_events:
-            console.print(f"  • Progress events: Yes")
         
         # Run analysis
         results = analyzer.analyze()
@@ -270,6 +189,50 @@ def main(
         console.print(f"[blue]Results saved to:[/blue]")
         console.print(f"  • JSON: {out_json}")
         console.print(f"  • CSV: {out_csv}")
+        
+        # Export metrics if requested
+        if metrics:
+            from .metrics import format_prometheus_metrics
+            metrics_data = results.get("metrics", {})
+            if metrics_data:
+                # Convert JSON metrics back to AnalysisMetrics for formatting
+                from .metrics import AnalysisMetrics, AnalysisStage
+                analysis_metrics = AnalysisMetrics()
+                
+                # Set timing data
+                timings = metrics_data.get("timings", {})
+                analysis_metrics.total_duration = timings.get("total_duration_seconds", 0.0)
+                
+                # Set other metrics
+                novelty = metrics_data.get("novelty", {})
+                analysis_metrics.novelty_peaks_count = novelty.get("peaks_count", 0)
+                analysis_metrics.novelty_frames_count = novelty.get("frames_count", 0)
+                
+                audio = metrics_data.get("audio", {})
+                analysis_metrics.audio_duration = audio.get("duration_seconds", 0.0)
+                analysis_metrics.audio_sample_rate = audio.get("sample_rate_hz", 0)
+                analysis_metrics.audio_bytes = audio.get("bytes", 0)
+                
+                processing = metrics_data.get("processing", {})
+                analysis_metrics.clips_generated = processing.get("clips_generated", 0)
+                analysis_metrics.segments_built = processing.get("segments_built", 0)
+                analysis_metrics.memory_peak_mb = processing.get("memory_peak_mb", 0.0)
+                
+                configuration = metrics_data.get("configuration", {})
+                analysis_metrics.clips_requested = configuration.get("clips_requested", 0)
+                analysis_metrics.min_clip_length = configuration.get("min_clip_length_seconds", 0.0)
+                analysis_metrics.max_clip_length = configuration.get("max_clip_length_seconds", 0.0)
+                analysis_metrics.with_motion = configuration.get("with_motion", False)
+                analysis_metrics.align_to_beat = configuration.get("align_to_beat", False)
+                
+                # Write Prometheus metrics
+                prometheus_metrics = format_prometheus_metrics(analysis_metrics)
+                with open(metrics, 'w') as f:
+                    f.write(prometheus_metrics)
+                
+                console.print(f"  • Metrics: {metrics}")
+                logger.info(f"Prometheus metrics exported to {metrics}")
+        
         
     except KeyboardInterrupt:
         console.print("\n[yellow]Analysis interrupted by user[/yellow]")
