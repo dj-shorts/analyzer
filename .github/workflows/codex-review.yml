@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   review:
+    if: false  # DISABLED: Workflow disabled to avoid additional costs
     runs-on: ubuntu-latest
     concurrency:
       group: codex-review-${{ github.event.pull_request.number }}
