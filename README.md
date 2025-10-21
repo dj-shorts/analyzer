@@ -1,10 +1,10 @@
-# MVP Analyzer v0.1.0
+# MVP Analyzer
 
 AI-powered music video highlight extraction tool for creating short clips for social media platforms.
 
-## 🚀 What's New in v0.1.0
+## 🚀 What's New in v0.2.0
 
-This is the first major release of the MVP Analyzer, providing core functionality for AI-powered music video highlight extraction with a clean, production-ready repository structure.
+This release introduces major new features including motion analysis, video export capabilities, and progress tracking for Server-Sent Events integration.
 
 ### ✨ Core Features
 
@@ -19,10 +19,29 @@ This is the first major release of the MVP Analyzer, providing core functionalit
 - **Beat Quantization**: Automatic alignment of clip boundaries to beat/bar boundaries
 - **Musical Intelligence**: Smart clip positioning based on musical structure
 
+#### 🎬 Motion Analysis
+- **Optical Flow**: Farnebäck optical flow for motion detection
+- **Motion Scoring**: Motion magnitude calculation and median scoring
+- **Score Combination**: Weighted combination with audio scores (60% audio + 40% motion)
+- **Timeline Interpolation**: Motion scores interpolated to audio timeline
+
+#### 🎥 Video Export
+- **Multi-Format Export**: Original (16:9), Vertical (9:16), and Square (1:1) formats
+- **Stream Copy**: Fast export using stream copy for compatible codecs
+- **H264 Fallback**: Automatic transcoding to H264 when needed
+- **Auto-Reframe**: HOG people detection for intelligent crop positioning
+- **Crop & Scale**: Automatic crop and scale operations for format conversion
+
 #### 📊 Output & Export
 - **CSV Export**: Structured data export for further processing
 - **JSON Export**: Rich metadata export with full analysis results
+- **Video Clips**: Direct video clip export with format options
 - **Schema Validation**: Comprehensive JSON schema validation for data integrity
+
+#### 🔄 Progress Events
+- **Real-time Progress**: JSON-formatted progress events for SSE integration
+- **Stage Tracking**: Detailed stage tracking throughout analysis pipeline
+- **Error Reporting**: Comprehensive error reporting and completion status
 
 #### 🧪 Testing & Quality
 - **Unit Tests**: Comprehensive test suite for all core components
@@ -50,15 +69,21 @@ This is the first major release of the MVP Analyzer, providing core functionalit
   - F3: Performance tests and profiling
 - **Epic E1**: JSON Schema Validation
 
-### 🔮 Roadmap (Future Releases)
-
-#### v0.2.0 - Video Export & Motion Analysis
+### ✅ Completed (v0.2.0)
 - **Epic C**: Motion Analysis (C1)
   - C1: Optical flow Farnebäck (3-4 fps) and mixing with audio score
 - **Epic D**: Video Export (D1-D3)
   - D1: Original 16:9 (stream copy / fallback h264)
   - D2: Export 9:16 and 1:1 (crop+scale)
   - D3: Auto-reframe (HOG/pose) for vertical/square
+- **Epic E2**: Progress Events (E2)
+  - E2: Progress/events in stdout (for SSE)
+
+### 🔮 Roadmap (Future Releases)
+
+#### v0.3.0 - Advanced CLI & Integration
+- **Epic E**: CLI Integration (E3)
+  - E3: Cancellation and resource management
 - **Epic G**: Observability (G1)
   - G1: Prometheus metrics implementation with CLI flag
 
@@ -107,6 +132,65 @@ uv run analyzer video.mp4 --clips 6 --align-to-beat
 uv run analyzer video.mp4 --clips 6 --seeds "10.5,25.3,45.1"
 ```
 
+### Motion Analysis
+```bash
+# Include motion analysis
+uv run analyzer video.mp4 --clips 6 --with-motion
+
+# Motion analysis with beat alignment
+uv run analyzer video.mp4 --clips 6 --with-motion --align-to-beat
+```
+
+### Video Export
+```bash
+# Export video clips (original format)
+uv run analyzer video.mp4 --clips 6 --export-video
+
+# Export in vertical format (9:16)
+uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical
+
+# Export in square format (1:1)
+uv run analyzer video.mp4 --clips 6 --export-video --export-format square
+
+# Auto-reframe with people detection
+uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical --auto-reframe
+
+# Dynamic Object Tracking (keeps subject centered)
+# Vertical (9:16) with tracking
+uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical \
+  --enable-object-tracking --tracking-smoothness 0.8 --tracking-confidence 0.5
+
+# Square (1:1) with tracking
+uv run analyzer video.mp4 --clips 6 --export-video --export-format square \
+  --enable-object-tracking --tracking-smoothness 0.8 --tracking-confidence 0.5
+
+# Debug tracking overlay video for inspection
+uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical \
+  --enable-object-tracking --debug-tracking
+```
+
+### Object Tracking
+Функция динамического трекинга позволяет держать объект (например, DJ) по центру кадра при экспорте вертикального и квадратного видео.
+
+- Включение: `--enable-object-tracking`
+- Плавность: `--tracking-smoothness 0.0-1.0` (по умолчанию 0.8)
+- Порог уверенности: `--tracking-confidence 0.0-1.0` (по умолчанию 0.5)
+- Фолбэк к центру: по умолчанию включён; отключить — `--no-fallback-center`
+- Отладка: `--debug-tracking` сохранит отладочное видео с оверлеем
+
+Примечания:
+- Формат `original` (16:9) не использует автокроп и сохраняет исходное кадрирование.
+- Для `vertical` и `square` при включённом трекинге используется динамический кроп; если трекинг выключен, применяется центрированный кроп или `--auto-reframe`.
+
+### Progress Events
+```bash
+# Enable progress events for SSE integration
+uv run analyzer video.mp4 --clips 6 --progress-events
+
+# Combined features with progress tracking
+uv run analyzer video.mp4 --clips 6 --with-motion --export-video --export-format vertical --progress-events
+```
+
 ### Advanced Usage
 ```bash
 # Custom clip parameters
@@ -115,22 +199,34 @@ uv run analyzer video.mp4 --clips 8 --min-len 20 --max-len 40
 # Performance profiling
 uv run analyzer video.mp4 --clips 6 --threads 4 --ram-limit 2GB
 
-# With seed timestamps
-uv run analyzer video.mp4 --clips 6 --seeds "10.5,25.3,45.1"
+# Custom export directory
+uv run analyzer video.mp4 --clips 6 --export-video --export-dir my_clips
 ```
 
 ## ⚙️ Configuration
 
 The analyzer supports various configuration options:
 
+### Core Analysis
 - `--clips`: Number of clips to extract (default: 6)
 - `--min-len`: Minimum clip length in seconds (default: 15.0)
 - `--max-len`: Maximum clip length in seconds (default: 30.0)
 - `--pre`: Pre-roll time in seconds (default: 10.0)
 - `--spacing`: Minimum spacing between peaks in frames (default: 80)
+- `--seeds`: Comma-separated seed timestamps (HH:MM:SS format)
+
+### Feature Flags
 - `--with-motion`: Include motion analysis (requires video input)
 - `--align-to-beat`: Align clips to beat boundaries
-- `--seeds`: Comma-separated seed timestamps (HH:MM:SS format)
+- `--progress-events`: Enable progress events in stdout for SSE (default: True)
+
+### Video Export
+- `--export-video`: Export video clips
+- `--export-dir`: Directory for exported video clips (default: clips)
+- `--export-format`: Export format: original, vertical, or square (default: original)
+- `--auto-reframe`: Enable auto-reframe with HOG people detection
+
+### Output & Performance
 - `--out-json`: Output JSON file path (default: highlights.json)
 - `--out-csv`: Output CSV file path (default: highlights.csv)
 - `--threads`: Number of threads to use (default: auto)
@@ -149,8 +245,27 @@ Contains segment information in tabular format:
 Contains detailed metadata and analysis results:
 - Configuration parameters used
 - Audio file metadata
+- Motion analysis results (if enabled)
+- Beat tracking data (if enabled)
 - Summary statistics
 - Complete segment information
+
+### Video Clips
+Exported video clips in various formats:
+- **Original**: 16:9 aspect ratio with stream copy or H264 fallback
+- **Vertical**: 9:16 aspect ratio with crop and scale
+- **Square**: 1:1 aspect ratio with crop and scale
+- **Auto-reframe**: Intelligent crop positioning based on people detection
+  
+Notes:
+- When using **Original** format, no auto-cropping is applied; the source framing is preserved.
+- For **Vertical** and **Square**, you can enable dynamic tracking with `--enable-object-tracking` to keep the subject centered. If tracking is disabled, a center crop is used (or auto-reframe when `--auto-reframe` is set).
+
+### Progress Events
+JSON-formatted events for Server-Sent Events integration:
+- Real-time progress updates
+- Stage tracking throughout analysis
+- Error reporting and completion status
 
 ## 🧪 Development
 
@@ -202,8 +317,11 @@ python -m src.analyzer.schema output.json --verbose
 ## 🔧 Technical Specifications
 
 - **Python**: 3.11+ support
-- **Dependencies**: numpy, librosa, click, pydantic, rich
+- **Dependencies**: numpy, librosa, click, pydantic, rich, opencv-python-headless
 - **Audio Processing**: ffmpeg integration with librosa
+- **Motion Analysis**: OpenCV optical flow Farnebäck
+- **People Detection**: OpenCV HOG descriptor
+- **Video Export**: FFmpeg integration with stream copy and H264 transcoding
 - **Beat Analysis**: librosa beat tracking and quantization
 - **Testing**: pytest with comprehensive coverage
 
@@ -226,8 +344,8 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Ready for production use!** 🚀
 
-**Total Issues Completed**: 13/24 (54% completion rate)  
-**Epic Coverage**: A, B, F, E1  
+**Total Issues Completed**: 18/24 (75% completion rate)  
+**Epic Coverage**: A, B, C, D, E1, E2, F  
 **Test Coverage**: Comprehensive unit, integration, and performance tests  
 **Production Ready**: ✅ Yes  
 **Repository Status**: ✅ Clean and optimized

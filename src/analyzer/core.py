@@ -4,6 +4,7 @@ Core analyzer module for MVP Analyzer.
 
 import logging
 from typing import Dict, Any
+import numpy as np
 
 from .config import Config
 from .audio import AudioExtractor
@@ -12,6 +13,9 @@ from .peaks import PeakPicker
 from .segments import SegmentBuilder
 from .export import ResultExporter
 from .beats import BeatTracker, BeatQuantizer
+from .motion import MotionDetector
+from .video import VideoExporter
+from .progress import ProgressEmitter, AnalysisStage
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +34,18 @@ class Analyzer:
         self.segment_builder = SegmentBuilder(config)
         self.result_exporter = ResultExporter(config)
         
+        # Initialize motion analysis if enabled
+        if config.with_motion:
+            self.motion_detector = MotionDetector(config)
+        
+        # Initialize video export if enabled
+        if config.export_video:
+            self.video_exporter = VideoExporter(config)
+        
+        # Initialize progress emitter if enabled
+        if config.progress_events:
+            self.progress_emitter = ProgressEmitter()
+        
         # Initialize beat tracking components if enabled
         if config.align_to_beat:
             self.beat_tracker = BeatTracker(config)
@@ -45,46 +61,124 @@ class Analyzer:
         logger.info("Starting analysis pipeline")
         
         try:
+            # Start progress tracking if enabled
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.start_stage(AnalysisStage.AUDIO_EXTRACTION)
+            
             # Step 1: Extract audio from video
             logger.info("Step 1: Extracting audio from video")
             audio_data = self.audio_extractor.extract()
             
-            # Step 2: Beat tracking (if enabled)
+            # Complete audio extraction stage
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.complete_stage(AnalysisStage.AUDIO_EXTRACTION)
+            
+            # Step 2: Motion analysis (if enabled)
+            motion_data = None
+            if hasattr(self, 'motion_detector'):
+                if hasattr(self, 'progress_emitter'):
+                    self.progress_emitter.start_stage(AnalysisStage.MOTION_ANALYSIS)
+                logger.info("Step 2: Motion analysis")
+                motion_data = self.motion_detector.extract_motion_features(self.config.input_path)
+                if hasattr(self, 'progress_emitter'):
+                    self.progress_emitter.complete_stage(AnalysisStage.MOTION_ANALYSIS)
+            
+            # Step 3: Beat tracking (if enabled)
             beat_data = None
             if self.config.align_to_beat:
-                logger.info("Step 2: Beat tracking and BPM estimation")
+                if hasattr(self, 'progress_emitter'):
+                    self.progress_emitter.start_stage(AnalysisStage.BEAT_TRACKING)
+                logger.info("Step 3: Beat tracking and BPM estimation")
                 beat_data = self.beat_tracker.track_beats(audio_data)
+                if hasattr(self, 'progress_emitter'):
+                    self.progress_emitter.complete_stage(AnalysisStage.BEAT_TRACKING)
             
-            # Step 3: Compute novelty scores
-            logger.info("Step 3: Computing novelty scores")
+            # Step 4: Compute novelty scores
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.start_stage(AnalysisStage.NOVELTY_DETECTION)
+            logger.info("Step 4: Computing novelty scores")
             novelty_scores = self.novelty_detector.compute_novelty(audio_data)
             
-            # Step 4: Find peaks
-            logger.info("Step 4: Finding peaks")
+            # Combine audio and motion scores if motion analysis was performed
+            if motion_data and motion_data.get("motion_available", False):
+                logger.info("Combining audio and motion scores (60/40 blend)")
+                # Use novelty timeline instead of raw audio samples
+                novelty_timeline = novelty_scores["time_axis"]
+                
+                # Interpolate motion scores to novelty timeline
+                motion_scores = self.motion_detector.interpolate_to_audio_timeline(
+                    motion_data, novelty_timeline
+                )
+                # Combine with novelty scores
+                combined_scores = self.motion_detector.combine_audio_and_motion_scores(
+                    novelty_scores["novelty_scores"], motion_scores
+                )
+                # Update novelty scores with combined values
+                novelty_scores["novelty_scores"] = combined_scores
+            
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.complete_stage(AnalysisStage.NOVELTY_DETECTION)
+            
+            # Step 5: Find peaks
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.start_stage(AnalysisStage.PEAK_DETECTION)
+            logger.info("Step 5: Finding peaks")
             peaks = self.peak_picker.find_peaks(novelty_scores)
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.complete_stage(AnalysisStage.PEAK_DETECTION)
             
-            # Step 5: Build segments
-            logger.info("Step 5: Building segments")
+            # Step 6: Build segments
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.start_stage(AnalysisStage.SEGMENT_BUILDING)
+            logger.info("Step 6: Building segments")
             segments = self.segment_builder.build_segments(peaks)
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.complete_stage(AnalysisStage.SEGMENT_BUILDING)
             
-            # Step 6: Beat quantization (if enabled)
+            # Step 7: Beat quantization (if enabled)
             if self.config.align_to_beat and beat_data:
-                logger.info("Step 6: Quantizing segments to beat boundaries")
+                logger.info("Step 7: Quantizing segments to beat boundaries")
                 segments = self._quantize_segments(segments, beat_data)
             
-            # Step 7: Export results
-            logger.info("Step 7: Exporting results")
+            # Step 8: Export results
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.start_stage(AnalysisStage.RESULT_EXPORT)
+            logger.info("Step 8: Exporting results")
             results = self.result_exporter.export(segments, audio_data)
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.complete_stage(AnalysisStage.RESULT_EXPORT)
+            
+            # Step 9: Video export (if enabled)
+            if hasattr(self, 'video_exporter'):
+                if hasattr(self, 'progress_emitter'):
+                    self.progress_emitter.start_stage(AnalysisStage.VIDEO_EXPORT)
+                logger.info("Step 9: Exporting video clips")
+                video_results = self.video_exporter.export_clips(segments, self.config.input_path, self.config.export_dir)
+                results["video_export"] = video_results
+                if hasattr(self, 'progress_emitter'):
+                    self.progress_emitter.complete_stage(AnalysisStage.VIDEO_EXPORT)
+            
+            # Add motion data to results if available
+            if motion_data:
+                results["motion_data"] = motion_data
             
             # Add beat data to results if available
             if beat_data:
                 results["beat_data"] = beat_data
+            
+            # Complete analysis
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.start_stage(AnalysisStage.COMPLETION)
+                self.progress_emitter.complete_stage(AnalysisStage.COMPLETION)
             
             logger.info("Analysis pipeline completed successfully")
             return results
             
         except Exception as e:
             logger.error(f"Analysis pipeline failed: {e}", exc_info=True)
+            # Emit error event if progress tracking is enabled
+            if hasattr(self, 'progress_emitter'):
+                self.progress_emitter.emit_error(str(e))
             raise
     
     def _quantize_segments(self, segments: Dict[str, Any], beat_data: Dict[str, Any]) -> Dict[str, Any]:
