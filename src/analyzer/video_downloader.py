@@ -92,7 +92,8 @@ class VideoDownloader:
             if output_path:
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 options = self.default_options.copy()
-                options['outtmpl'] = str(output_path.with_suffix(''))
+                # Preserve extension by adding %(ext)s placeholder
+                options['outtmpl'] = str(output_path.with_suffix('')) + '.%(ext)s'
             else:
                 options = self.default_options.copy()
             
