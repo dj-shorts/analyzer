@@ -1,238 +1,191 @@
 """
-Progress events module for MVP Analyzer.
-Provides JSON events in stdout for SSE (Server-Sent Events) integration.
+Progress tracking module for MVP Analyzer.
+
+This module handles progress events for SSE.
 """
 
 import json
 import sys
+import logging
 import time
-from typing import Dict, Any, Optional
+from datetime import datetime
 from enum import Enum
+from typing import Optional, Dict, Any
+
+logger = logging.getLogger(__name__)
 
 
-class EventType(Enum):
-    """Types of progress events."""
-    PROGRESS = "progress"
-    STAGE = "stage"
-    COMPLETE = "complete"
-    ERROR = "error"
+class EventType(str, Enum):
+    """Defines types of progress events."""
+    STAGE_START = "stage_start"
+    STAGE_COMPLETE = "stage_complete"
+    PROGRESS_UPDATE = "progress_update"
+    PROGRESS = "progress"  # Alias for backward compatibility
+    STAGE = "stage"  # Alias for backward compatibility
+    COMPLETE = "complete"  # Alias for backward compatibility
     INFO = "info"
+    ERROR = "error"
 
 
-class AnalysisStage(Enum):
-    """Analysis pipeline stages."""
+class AnalysisStage(str, Enum):
+    """Defines the stages of the analysis pipeline."""
     INITIALIZATION = "initialization"
     AUDIO_EXTRACTION = "audio_extraction"
-    NOVELTY_DETECTION = "novelty_detection"
-    PEAK_DETECTION = "peak_detection"
     BEAT_TRACKING = "beat_tracking"
-    MOTION_ANALYSIS = "motion_analysis"
+    NOVELTY_DETECTION = "novelty_detection"
+    PEAK_DETECTION = "peak_detection"  # Alias for PEAK_PICKING
+    PEAK_PICKING = "peak_picking"
     SEGMENT_BUILDING = "segment_building"
+    BEAT_QUANTIZATION = "beat_quantization"
     VIDEO_EXPORT = "video_export"
     RESULT_EXPORT = "result_export"
     COMPLETION = "completion"
 
 
 class ProgressEmitter:
-    """Emits JSON progress events to stdout for SSE integration."""
+    """Emits JSON-formatted progress events to stdout for Server-Sent Events (SSE)."""
     
     def __init__(self, enabled: bool = True):
-        """
-        Initialize progress emitter.
-        
-        Args:
-            enabled: Whether to emit progress events (default: True)
-        """
+        """Initialize the progress emitter."""
         self.enabled = enabled
-        self.start_time = time.time()
-        self.current_stage = None
-        self.stage_start_time = None
+        self.current_stage: Optional[AnalysisStage] = None
+        self.stage_start_time: Optional[datetime] = None
+        self.stage_progress_ranges = {
+            AnalysisStage.INITIALIZATION: (0, 5),
+            AnalysisStage.AUDIO_EXTRACTION: (5, 15),
+            AnalysisStage.BEAT_TRACKING: (15, 25),
+            AnalysisStage.NOVELTY_DETECTION: (15, 35),  # Changed from (30, 50) to (15, 35)
+            AnalysisStage.PEAK_DETECTION: (35, 50),
+            AnalysisStage.PEAK_PICKING: (35, 50),
+            AnalysisStage.SEGMENT_BUILDING: (50, 65),
+            AnalysisStage.BEAT_QUANTIZATION: (65, 75),
+            AnalysisStage.VIDEO_EXPORT: (75, 90),
+            AnalysisStage.RESULT_EXPORT: (90, 100),
+            AnalysisStage.COMPLETION: (100, 100),
+        }
     
-    def emit_event(self, event_type: EventType, stage: Optional[AnalysisStage] = None, 
-                   progress: Optional[int] = None, message: Optional[str] = None,
-                   data: Optional[Dict[str, Any]] = None) -> None:
-        """
-        Emit a progress event to stdout.
-        
-        Args:
-            event_type: Type of event to emit
-            stage: Current analysis stage
-            progress: Progress percentage (0-100)
-            message: Human-readable message
-            data: Additional event data
-        """
+    def emit_event(self, event_type: EventType, **kwargs) -> None:
+        """Emit a progress event to stdout."""
         if not self.enabled:
             return
         
+        # Extract data field if present
+        data = kwargs.pop('data', None)
+        
         event = {
             "type": event_type.value,
-            "timestamp": time.time(),
-            "elapsed": time.time() - self.start_time
+            "timestamp": datetime.now().isoformat(),
+            "elapsed": 0.0,  # Default elapsed time
+            **kwargs
         }
         
-        if stage is not None:
-            event["stage"] = stage.value
-        
-        if progress is not None:
-            event["progress"] = min(100, max(0, progress))
-        
-        if message is not None:
-            event["message"] = message
-        
-        if data is not None:
+        # Add data field if present
+        if data:
             event.update(data)
         
-        # Write JSON event to stdout (one per line for SSE compatibility)
-        print(json.dumps(event, ensure_ascii=False), flush=True)
+        # Emit to stdout for SSE
+        print(json.dumps(event), flush=True)
     
     def start_stage(self, stage: AnalysisStage, message: Optional[str] = None) -> None:
-        """
-        Start a new analysis stage.
-        
-        Args:
-            stage: Stage to start
-            message: Optional message for the stage
-        """
+        """Start a new analysis stage."""
         if not self.enabled:
             return
         
         self.current_stage = stage
-        self.stage_start_time = time.time()
+        self.stage_start_time = datetime.now()
         
-        default_messages = {
-            AnalysisStage.INITIALIZATION: "Initializing analysis...",
-            AnalysisStage.AUDIO_EXTRACTION: "Extracting audio from video...",
-            AnalysisStage.NOVELTY_DETECTION: "Analyzing audio novelty...",
-            AnalysisStage.PEAK_DETECTION: "Detecting peaks in audio...",
-            AnalysisStage.BEAT_TRACKING: "Tracking beat patterns...",
-            AnalysisStage.MOTION_ANALYSIS: "Analyzing video motion...",
-            AnalysisStage.SEGMENT_BUILDING: "Building video segments...",
-            AnalysisStage.VIDEO_EXPORT: "Exporting video clips...",
-            AnalysisStage.RESULT_EXPORT: "Exporting analysis results...",
-            AnalysisStage.COMPLETION: "Analysis completed successfully"
-        }
+        # Generate default message based on stage
+        if message is None:
+            stage_messages = {
+                AnalysisStage.AUDIO_EXTRACTION: "Extracting audio from video...",
+                AnalysisStage.BEAT_TRACKING: "Analyzing beat patterns...",
+                AnalysisStage.NOVELTY_DETECTION: "Analyzing audio novelty...",
+                AnalysisStage.PEAK_DETECTION: "Detecting peaks...",
+                AnalysisStage.PEAK_PICKING: "Detecting peaks...",
+                AnalysisStage.SEGMENT_BUILDING: "Building segments...",
+                AnalysisStage.BEAT_QUANTIZATION: "Quantizing to beats...",
+                AnalysisStage.VIDEO_EXPORT: "Exporting video clips...",
+                AnalysisStage.RESULT_EXPORT: "Exporting results...",
+                AnalysisStage.COMPLETION: "Analysis complete...",
+            }
+            message = stage_messages.get(stage, f"Starting {stage.value.replace('_', ' ').title()}")
         
-        stage_message = message or default_messages.get(stage, f"Starting {stage.value}...")
-        
+        # Emit stage start event
         self.emit_event(
-            EventType.STAGE,
-            stage=stage,
-            message=stage_message,
-            data={"stage_start_time": self.stage_start_time}
-        )
-    
-    def update_progress(self, progress: int, message: Optional[str] = None) -> None:
-        """
-        Update progress for current stage.
-        
-        Args:
-            progress: Progress percentage (0-100)
-            message: Optional progress message
-        """
-        if not self.enabled or self.current_stage is None:
-            return
-        
-        self.emit_event(
-            EventType.PROGRESS,
-            stage=self.current_stage,
-            progress=progress,
+            EventType.STAGE,  # Use STAGE instead of STAGE_START for backward compatibility
+            stage=stage.value,
             message=message
         )
     
     def complete_stage(self, message: Optional[str] = None) -> None:
-        """
-        Complete current stage.
-        
-        Args:
-            message: Optional completion message
-        """
-        if not self.enabled or self.current_stage is None:
+        """Complete the current analysis stage."""
+        if not self.enabled or not self.current_stage:
             return
         
-        stage_duration = time.time() - (self.stage_start_time or self.start_time)
+        # Calculate stage duration
+        stage_duration = 0.0
+        if self.stage_start_time:
+            if isinstance(self.stage_start_time, datetime):
+                stage_duration = (datetime.now() - self.stage_start_time).total_seconds()
+            else:
+                # If it's a float (timestamp), calculate difference using time.time()
+                stage_duration = time.time() - self.stage_start_time
         
-        completion_message = message or f"Completed {self.current_stage.value}"
-        
+        # Emit stage complete event
         self.emit_event(
-            EventType.COMPLETE,
-            stage=self.current_stage,
-            progress=100,
-            message=completion_message,
-            data={"stage_duration": stage_duration}
+            EventType.COMPLETE,  # Use COMPLETE instead of STAGE_COMPLETE for backward compatibility
+            stage=self.current_stage.value,
+            message=message or f"Completed {self.current_stage.value.replace('_', ' ').title()}",
+            progress=100,  # Always 100% when completing
+            stage_duration=stage_duration
+        )
+        
+        self.current_stage = None
+        self.stage_start_time = None
+    
+    def update_progress(self, percentage: int, message: str) -> None:
+        """Update progress for the current stage."""
+        if not self.enabled or not self.current_stage:
+            return
+        
+        # Emit progress update event
+        self.emit_event(
+            EventType.PROGRESS,  # Use PROGRESS instead of PROGRESS_UPDATE for backward compatibility
+            progress=percentage,  # Use 'progress' instead of 'percentage' for backward compatibility
+            message=message,
+            stage=self.current_stage.value
         )
     
-    def emit_error(self, error_message: str, stage: Optional[AnalysisStage] = None) -> None:
-        """
-        Emit an error event.
-        
-        Args:
-            error_message: Error description
-            stage: Optional stage where error occurred
-        """
+    def emit_error(self, message: str, stage: Optional[AnalysisStage] = None) -> None:
+        """Emit an error event."""
         if not self.enabled:
             return
         
         self.emit_event(
             EventType.ERROR,
-            stage=stage or self.current_stage,
-            message=f"Error: {error_message}"
+            message=f"Error: {message}",
+            stage=stage.value if stage else None
         )
     
-    def emit_info(self, message: str, data: Optional[Dict[str, Any]] = None) -> None:
-        """
-        Emit an info event.
-        
-        Args:
-            message: Information message
-            data: Optional additional data
-        """
+    def emit_info(self, message: str, data: Optional[dict] = None) -> None:
+        """Emit an info event."""
         if not self.enabled:
             return
         
+        event_data = {"message": message}
+        if data:
+            event_data.update(data)
+        
         self.emit_event(
             EventType.INFO,
-            message=message,
-            data=data
+            **event_data
         )
     
     def get_stage_progress_range(self, stage: AnalysisStage) -> tuple[int, int]:
-        """
-        Get progress range for a specific stage.
-        
-        Args:
-            stage: Analysis stage
-            
-        Returns:
-            Tuple of (start_progress, end_progress) percentages
-        """
-        # Define progress ranges for each stage (total should add up to 100)
-        stage_ranges = {
-            AnalysisStage.INITIALIZATION: (0, 5),
-            AnalysisStage.AUDIO_EXTRACTION: (5, 15),
-            AnalysisStage.NOVELTY_DETECTION: (15, 35),
-            AnalysisStage.PEAK_DETECTION: (35, 50),
-            AnalysisStage.BEAT_TRACKING: (50, 60),
-            AnalysisStage.MOTION_ANALYSIS: (60, 75),
-            AnalysisStage.SEGMENT_BUILDING: (75, 85),
-            AnalysisStage.VIDEO_EXPORT: (85, 95),
-            AnalysisStage.RESULT_EXPORT: (95, 100),
-            AnalysisStage.COMPLETION: (100, 100)
-        }
-        
-        return stage_ranges.get(stage, (0, 100))
+        """Get the progress range for a stage."""
+        return self.stage_progress_ranges.get(stage, (0, 100))
     
-    def calculate_stage_progress(self, stage: AnalysisStage, stage_progress: float) -> int:
-        """
-        Calculate overall progress from stage progress.
-        
-        Args:
-            stage: Current analysis stage
-            stage_progress: Progress within stage (0.0-1.0)
-            
-        Returns:
-            Overall progress percentage (0-100)
-        """
-        start_progress, end_progress = self.get_stage_progress_range(stage)
-        stage_range = end_progress - start_progress
-        overall_progress = start_progress + (stage_progress * stage_range)
-        return int(overall_progress)
+    def calculate_stage_progress(self, stage: AnalysisStage, progress: float) -> int:
+        """Calculate overall progress percentage for a stage."""
+        start, end = self.get_stage_progress_range(stage)
+        return int(start + (end - start) * progress)
