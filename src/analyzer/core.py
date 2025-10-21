@@ -180,14 +180,13 @@ class Analyzer:
                 segments = self._quantize_segments(segments, beat_data)
                 self.progress_emitter.complete_stage()
             
-            # Step 8: Export results
-            logger.info("Step 8: Exporting results")
+            # Step 8: Export results (initial, without final metrics)
+            logger.info("Step 8: Exporting results (initial)")
             self.progress_emitter.start_stage(ProgressStage.RESULT_EXPORT)
             self.metrics_collector.start_stage(MetricsStage.EXPORT)
             
-            # Export with metrics (get current metrics without finishing)
-            current_metrics = self.metrics_collector.get_current_metrics()
-            results = self.result_exporter.export(segments, audio_data, current_metrics.to_json_metrics())
+            # Perform initial export without final metrics
+            results = self.result_exporter.export(segments, audio_data)
             self.metrics_collector.finish_stage(MetricsStage.EXPORT)
             self.progress_emitter.complete_stage()
             
@@ -210,6 +209,11 @@ class Analyzer:
             
             # Add metrics to results for CLI --metrics option
             results["metrics"] = final_metrics.to_json_metrics()
+            
+            # Step 10: Final export with complete metrics
+            logger.info("Step 10: Finalizing results export with complete metrics")
+            # Re-export the JSON with complete metrics to overwrite the initial file
+            self.result_exporter.export(segments, audio_data, final_metrics.to_json_metrics())
             
             # Add beat data to results if available
             if beat_data:
