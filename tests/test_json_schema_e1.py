@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-from src.analyzer.schema import JSONSchemaValidator, validate_analysis_result, validate_output_files
+from analyzer.schema import JSONSchemaValidator, validate_analysis_result, validate_output_files
 
 
 class TestJSONSchemaValidationEpicE1:

@@ -23,9 +23,9 @@ from unittest.mock import patch, MagicMock
 import numpy as np
 import librosa
 
-from src.analyzer.core import Analyzer
-from src.analyzer.config import Config
-from src.analyzer.cli import main as cli_main
+from analyzer.core import Analyzer
+from analyzer.config import Config
+from analyzer.cli import main as cli_main
 
 
 class TestEndToEndPipelineEpicF2:

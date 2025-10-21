@@ -138,6 +138,11 @@ def setup_logging(verbose: bool = False) -> None:
     type=click.Path(path_type=Path), 
     help="Export Prometheus metrics to file"
 )
+@click.option(
+    "--progress-events",
+    is_flag=True,
+    help="Enable progress events in stdout for SSE"
+)
 def main(
     input: str,
     download_dir: Path,
@@ -159,6 +164,7 @@ def main(
     export_format: str,
     auto_reframe: bool,
     metrics: Optional[Path],
+    progress_events: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
@@ -242,6 +248,7 @@ def main(
             output_csv=out_csv,
             threads=threads,
             ram_limit=ram_limit,
+            progress_events=progress_events,
         )
         
         # Create and run analyzer

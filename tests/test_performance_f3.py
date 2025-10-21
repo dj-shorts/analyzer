@@ -24,10 +24,10 @@ import cProfile
 import pstats
 import io
 
-from src.analyzer.core import Analyzer
-from src.analyzer.config import Config
-from src.analyzer.novelty import NoveltyDetector
-from src.analyzer.beats import BeatTracker
+from analyzer.core import Analyzer
+from analyzer.config import Config
+from analyzer.novelty import NoveltyDetector
+from analyzer.beats import BeatTracker
 
 
 class TestPerformanceEpicF3:

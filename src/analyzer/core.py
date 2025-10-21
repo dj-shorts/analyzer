@@ -12,7 +12,8 @@ from .peaks import PeakPicker
 from .segments import SegmentBuilder
 from .export import ResultExporter
 from .beats import BeatTracker, BeatQuantizer
-from .metrics import MetricsCollector, AnalysisStage
+from .metrics import MetricsCollector, AnalysisStage as MetricsStage
+from .progress import ProgressEmitter, AnalysisStage as ProgressStage
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,12 @@ class Analyzer:
         
         # Initialize metrics collector
         self.metrics_collector = MetricsCollector()
+        
+        # Initialize progress emitter if enabled
+        if config.progress_events:
+            self.progress_emitter = ProgressEmitter(enabled=True)
+        else:
+            self.progress_emitter = ProgressEmitter(enabled=False)
         
         # Initialize components
         self.audio_extractor = AudioExtractor(config)
@@ -60,9 +67,11 @@ class Analyzer:
             
             # Step 1: Extract audio from video
             logger.info("Step 1: Extracting audio from video")
-            self.metrics_collector.start_stage(AnalysisStage.AUDIO_EXTRACTION)
+            self.progress_emitter.start_stage(ProgressStage.AUDIO_EXTRACTION)
+            self.metrics_collector.start_stage(MetricsStage.AUDIO_EXTRACTION)
             audio_data = self.audio_extractor.extract()
-            self.metrics_collector.finish_stage(AnalysisStage.AUDIO_EXTRACTION)
+            self.metrics_collector.finish_stage(MetricsStage.AUDIO_EXTRACTION)
+            self.progress_emitter.complete_stage()
             
             # Set audio metrics
             self.metrics_collector.set_audio_metrics(
@@ -75,15 +84,19 @@ class Analyzer:
             beat_data = None
             if self.config.align_to_beat:
                 logger.info("Step 2: Beat tracking and BPM estimation")
-                self.metrics_collector.start_stage(AnalysisStage.BEAT_TRACKING)
+                self.progress_emitter.start_stage(ProgressStage.BEAT_TRACKING)
+                self.metrics_collector.start_stage(MetricsStage.BEAT_TRACKING)
                 beat_data = self.beat_tracker.track_beats(audio_data)
-                self.metrics_collector.finish_stage(AnalysisStage.BEAT_TRACKING)
+                self.metrics_collector.finish_stage(MetricsStage.BEAT_TRACKING)
+                self.progress_emitter.complete_stage()
             
             # Step 3: Compute novelty scores
             logger.info("Step 3: Computing novelty scores")
-            self.metrics_collector.start_stage(AnalysisStage.NOVELTY_DETECTION)
+            self.progress_emitter.start_stage(ProgressStage.NOVELTY_DETECTION)
+            self.metrics_collector.start_stage(MetricsStage.NOVELTY_DETECTION)
             novelty_scores = self.novelty_detector.compute_novelty(audio_data)
-            self.metrics_collector.finish_stage(AnalysisStage.NOVELTY_DETECTION)
+            self.metrics_collector.finish_stage(MetricsStage.NOVELTY_DETECTION)
+            self.progress_emitter.complete_stage()
             
             # Set novelty metrics
             self.metrics_collector.set_novelty_metrics(
@@ -93,9 +106,11 @@ class Analyzer:
             
             # Step 4: Find peaks
             logger.info("Step 4: Finding peaks")
-            self.metrics_collector.start_stage(AnalysisStage.PEAK_PICKING)
+            self.progress_emitter.start_stage(ProgressStage.PEAK_PICKING)
+            self.metrics_collector.start_stage(MetricsStage.PEAK_PICKING)
             peaks = self.peak_picker.find_peaks(novelty_scores)
-            self.metrics_collector.finish_stage(AnalysisStage.PEAK_PICKING)
+            self.metrics_collector.finish_stage(MetricsStage.PEAK_PICKING)
+            self.progress_emitter.complete_stage()
             
             # Update novelty metrics with actual peaks count
             self.metrics_collector.set_novelty_metrics(
@@ -105,9 +120,11 @@ class Analyzer:
             
             # Step 5: Build segments
             logger.info("Step 5: Building segments")
-            self.metrics_collector.start_stage(AnalysisStage.SEGMENT_BUILDING)
+            self.progress_emitter.start_stage(ProgressStage.SEGMENT_BUILDING)
+            self.metrics_collector.start_stage(MetricsStage.SEGMENT_BUILDING)
             segments = self.segment_builder.build_segments(peaks)
-            self.metrics_collector.finish_stage(AnalysisStage.SEGMENT_BUILDING)
+            self.metrics_collector.finish_stage(MetricsStage.SEGMENT_BUILDING)
+            self.progress_emitter.complete_stage()
             
             # Set processing metrics
             self.metrics_collector.set_processing_metrics(
@@ -118,23 +135,27 @@ class Analyzer:
             # Step 6: Beat quantization (if enabled)
             if self.config.align_to_beat and beat_data:
                 logger.info("Step 6: Quantizing segments to beat boundaries")
+                self.progress_emitter.start_stage(ProgressStage.BEAT_QUANTIZATION)
                 segments = self._quantize_segments(segments, beat_data)
+                self.progress_emitter.complete_stage()
             
             # Step 7: Export results
             logger.info("Step 7: Exporting results")
-            self.metrics_collector.start_stage(AnalysisStage.EXPORT)
+            self.progress_emitter.start_stage(ProgressStage.RESULT_EXPORT)
+            self.metrics_collector.start_stage(MetricsStage.EXPORT)
             
             # Finish metrics collection first
             final_metrics = self.metrics_collector.finish()
             
             # Export with metrics
             results = self.result_exporter.export(segments, audio_data, final_metrics.to_json_metrics())
-            self.metrics_collector.finish_stage(AnalysisStage.EXPORT)
+            self.metrics_collector.finish_stage(MetricsStage.EXPORT)
+            self.progress_emitter.complete_stage()
             
             # Add beat data to results if available
             if beat_data:
                 results["beat_data"] = beat_data
-            
+                
             logger.info("Analysis pipeline completed successfully")
             return results
             
