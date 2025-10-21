@@ -99,10 +99,12 @@ class ObjectTracker:
             processed_count = 0
             start_time = time.time()
             
-            # Create progress bar
+            # Create progress bar (disable when progress events are enabled to avoid stdout conflicts)
             from tqdm import tqdm
+            disable_tqdm = getattr(self.config, 'progress_events', False)
             with tqdm(total=total_frames, desc="Object Tracking", unit="frames",
-                     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} frames [{elapsed}<{remaining}, {rate_fmt}]") as pbar:
+                     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} frames [{elapsed}<{remaining}, {rate_fmt}]",
+                     disable=disable_tqdm) as pbar:
                 
                 while True:
                     ret, frame = cap.read()

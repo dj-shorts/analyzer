@@ -212,7 +212,7 @@ class PeopleDetector:
         target_aspect = target_width / target_height
         
         if target_aspect > input_aspect:
-            # Target is wider - crop height
+            # Target is wider - crop height (use full height, calculate width)
             crop_height = input_height
             crop_width = int(input_height * target_aspect)
             
@@ -223,7 +223,7 @@ class PeopleDetector:
             crop_x = max(0, min(input_width - crop_width, int(center_x - crop_width / 2)))
             crop_y = 0
         else:
-            # Target is taller - crop width
+            # Target is taller - crop width (use full width, calculate height)
             crop_width = input_width
             crop_height = int(input_width / target_aspect)
             
