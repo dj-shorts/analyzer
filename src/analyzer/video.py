@@ -7,7 +7,7 @@ import logging
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 import json
 
 from .config import Config
@@ -430,8 +430,9 @@ class VideoExporter:
             else:
                 crop_scale_filter = self._build_crop_scale_filter(format_config)
             cmd.extend(["-vf", crop_scale_filter])
-        else:
-            cmd.extend(self.h264_params)
+        
+        # Always add H.264 parameters for all formats
+        cmd.extend(self.h264_params)
         
         # Add audio codec parameters
         cmd.extend(self.audio_params)
@@ -600,9 +601,8 @@ class VideoExporter:
                 center_x = detection_result["center_x"]
                 logger.info(f"Auto-reframe: Using people detection center X={center_x}")
                 
-                # Get input video dimensions (simplified - in practice you'd get from video info)
-                input_width = 1920  # Default assumption
-                input_height = 1080  # Default assumption
+                # Get actual input video dimensions
+                input_width, input_height = self._get_video_dimensions(input_path)
                 
                 # Calculate crop window around detected people
                 crop_x, crop_y, crop_width, crop_height = self.people_detector.calculate_crop_window(
@@ -624,3 +624,45 @@ class VideoExporter:
         except Exception as e:
             logger.warning(f"Auto-reframe failed: {e}, falling back to center crop")
             return self._build_crop_scale_filter(format_config)
+    
+    def _get_video_dimensions(self, video_path: Path) -> Tuple[int, int]:
+        """
+        Get video dimensions using ffprobe.
+        
+        Args:
+            video_path: Path to video file
+            
+        Returns:
+            Tuple of (width, height)
+        """
+        try:
+            import subprocess
+            import json
+            
+            # Use ffprobe to get video dimensions
+            cmd = [
+                "ffprobe",
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_streams",
+                str(video_path)
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            data = json.loads(result.stdout)
+            
+            # Find video stream
+            for stream in data.get("streams", []):
+                if stream.get("codec_type") == "video":
+                    width = int(stream.get("width", 1920))
+                    height = int(stream.get("height", 1080))
+                    logger.debug(f"Video dimensions: {width}x{height}")
+                    return width, height
+            
+            # Fallback to default dimensions
+            logger.warning("Could not determine video dimensions, using default 1920x1080")
+            return 1920, 1080
+            
+        except Exception as e:
+            logger.warning(f"Failed to get video dimensions: {e}, using default 1920x1080")
+            return 1920, 1080
