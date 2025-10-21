@@ -293,16 +293,36 @@ def main(
         
         # Export metrics if requested
         if metrics:
-            from .metrics import format_prometheus_metrics
+            from .metrics import format_prometheus_metrics, AnalysisMetrics, AnalysisStage, StageTiming
             metrics_data = results.get("metrics", {})
             if metrics_data:
                 # Convert JSON metrics back to AnalysisMetrics for formatting
-                from .metrics import AnalysisMetrics, AnalysisStage
                 analysis_metrics = AnalysisMetrics()
                 
                 # Set timing data
                 timings = metrics_data.get("timings", {})
                 analysis_metrics.total_duration = timings.get("total_duration_seconds", 0.0)
+                
+                # Reconstruct stage timings from JSON data
+                stages_data = timings.get("stages", {})
+                for stage_name, stage_data in stages_data.items():
+                    try:
+                        stage = AnalysisStage(stage_name)
+                        duration = stage_data.get("duration_seconds", 0.0)
+                        start_time = stage_data.get("start_time", 0.0)
+                        end_time = stage_data.get("end_time", start_time + duration)
+                        
+                        # Create StageTiming object
+                        stage_timing = StageTiming(
+                            stage=stage,
+                            start_time=start_time,
+                            end_time=end_time,
+                            duration=duration
+                        )
+                        analysis_metrics.stage_timings[stage] = stage_timing
+                    except ValueError:
+                        # Skip unknown stages
+                        continue
                 
                 # Set other metrics
                 novelty = metrics_data.get("novelty", {})
@@ -313,6 +333,13 @@ def main(
                 analysis_metrics.audio_duration = audio.get("duration_seconds", 0.0)
                 analysis_metrics.audio_sample_rate = audio.get("sample_rate_hz", 0)
                 analysis_metrics.audio_bytes = audio.get("bytes", 0)
+                
+                # Set video metrics
+                video = metrics_data.get("video", {})
+                analysis_metrics.video_duration = video.get("duration_seconds", 0.0)
+                analysis_metrics.video_bytes = video.get("bytes", 0)
+                analysis_metrics.video_width = video.get("width_pixels", 0)
+                analysis_metrics.video_height = video.get("height_pixels", 0)
                 
                 processing = metrics_data.get("processing", {})
                 analysis_metrics.clips_generated = processing.get("clips_generated", 0)

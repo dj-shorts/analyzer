@@ -31,6 +31,16 @@ class ResourceManager:
         self.ram_limit = self._parse_ram_limit(ram_limit)
         self.child_processes: Set[subprocess.Popen] = set()
         self._lock = threading.Lock()
+        self._cancellation_manager: Optional['CancellationManager'] = None
+    
+    def set_cancellation_manager(self, cancellation_manager: 'CancellationManager') -> None:
+        """
+        Set the cancellation manager for this resource manager.
+        
+        Args:
+            cancellation_manager: CancellationManager instance
+        """
+        self._cancellation_manager = cancellation_manager
         
     def _parse_ram_limit(self, ram_limit: Optional[str]) -> Optional[int]:
         """
@@ -267,6 +277,9 @@ def managed_resources(max_threads: Optional[int] = None, ram_limit: Optional[str
     resource_manager = ResourceManager(max_threads, ram_limit)
     cancellation_manager = CancellationManager(resource_manager)
     
+    # Wire cancellation manager into resource manager
+    resource_manager.set_cancellation_manager(cancellation_manager)
+    
     try:
         cancellation_manager.setup_signal_handlers()
         logger.info(f"Resource management initialized (threads: {max_threads}, RAM: {ram_limit})")
@@ -301,7 +314,7 @@ class ProcessMonitor:
             Subprocess instance
         """
         # Check cancellation before starting
-        if hasattr(self.resource_manager, '_cancellation_manager'):
+        if hasattr(self.resource_manager, '_cancellation_manager') and self.resource_manager._cancellation_manager is not None:
             self.resource_manager._cancellation_manager.check_cancellation()
         
         # Set default subprocess options
