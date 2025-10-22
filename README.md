@@ -390,6 +390,27 @@ python -m src.analyzer.schema output.json --csv output.csv
 python -m src.analyzer.schema output.json --verbose
 ```
 
+## 🧪 Testing with TestSprite
+
+Comprehensive test reporting with TestSprite integration:
+
+```bash
+# Run tests locally with TestSprite
+export TESTSPRITE_ENABLED=true
+uv run pytest -v
+
+# View results in TestSprite dashboard
+open https://app.testsprite.com/dj-shorts/analyzer
+```
+
+**Test Suite**: ~200 tests covering:
+- Unit tests (audio, beats, motion)
+- Integration tests (full pipeline)
+- Performance tests (benchmarks)
+- Regression tests (known issues)
+
+See [docs/TESTSPRITE.md](docs/TESTSPRITE.md) for complete testing guide.
+
 ## 🔧 Technical Specifications
 
 - **Python**: 3.11+ support
