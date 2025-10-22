@@ -30,7 +30,7 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 @click.command()
-@click.argument("input", type=click.Path(exists=True, path_type=Path))
+@click.argument("video_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--clips", 
     "-k", 
@@ -80,14 +80,14 @@ def setup_logging(verbose: bool = False) -> None:
 @click.option(
     "--out-json", 
     type=click.Path(path_type=Path), 
-    default="highlights.json",
-    help="Output JSON file path (default: highlights.json)"
+    default="data/highlights.json",
+    help="Output JSON file path (default: data/highlights.json)"
 )
 @click.option(
     "--out-csv", 
     type=click.Path(path_type=Path), 
-    default="highlights.csv",
-    help="Output CSV file path (default: highlights.csv)"
+    default="data/highlights.csv",
+    help="Output CSV file path (default: data/highlights.csv)"
 )
 @click.option(
     "--verbose", 
@@ -118,49 +118,27 @@ def setup_logging(verbose: bool = False) -> None:
 )
 @click.option(
     "--export-format",
-    type=click.Choice(["original", "vertical", "square"], case_sensitive=False),
+    type=click.Choice(["original", "vertical", "square"]),
     default="original",
-    help="Export format: original (16:9), vertical (9:16), or square (1:1)"
+    help="Export format: original (16:9), vertical (9:16), square (1:1) (default: original)"
 )
 @click.option(
     "--auto-reframe",
     is_flag=True,
-    help="Enable auto-reframe with HOG people detection"
+    help="Enable auto-reframe using people detection for vertical/square formats"
+)
+@click.option(
+    "--metrics", 
+    type=click.Path(path_type=Path), 
+    help="Export Prometheus metrics to file"
 )
 @click.option(
     "--progress-events",
     is_flag=True,
     help="Enable progress events in stdout for SSE"
 )
-@click.option(
-    "--enable-object-tracking",
-    is_flag=True,
-    help="Enable dynamic object tracking for video export"
-)
-@click.option(
-    "--tracking-smoothness",
-    type=float,
-    default=0.8,
-    help="Tracking smoothness factor (0.0-1.0, default: 0.8)"
-)
-@click.option(
-    "--tracking-confidence",
-    type=float,
-    default=0.5,
-    help="Minimum confidence threshold for object detection (0.0-1.0, default: 0.5)"
-)
-@click.option(
-    "--no-fallback-center",
-    is_flag=True,
-    help="Disable fallback to center crop when tracking fails"
-)
-@click.option(
-    "--debug-tracking",
-    is_flag=True,
-    help="Enable debug visualization of object tracking"
-)
 def main(
-    input: Path,
+    video_file: Path,
     clips: int,
     min_len: float,
     max_len: float,
@@ -178,23 +156,26 @@ def main(
     export_dir: Path,
     export_format: str,
     auto_reframe: bool,
+    metrics: Optional[Path],
     progress_events: bool,
-    enable_object_tracking: bool,
-    tracking_smoothness: float,
-    tracking_confidence: float,
-    no_fallback_center: bool,
-    debug_tracking: bool,
 ) -> None:
     """
     MVP Analyzer - Extract highlights from music videos.
     
-    INPUT: Path to input video file (mp4, mov, etc.)
+    VIDEO_FILE: Path to input video file (mp4, mov, webm, etc.)
+    
+    For YouTube videos, download manually first:
+        yt-dlp -f "best[height<=1080]" -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+    Then analyze the downloaded file:
+        analyzer video.mp4 --clips 3 --export-video
     """
     setup_logging(verbose)
     
     logger = logging.getLogger(__name__)
     
     try:
+        video_path = video_file
+        
         # Parse seed timestamps if provided
         seed_timestamps = []
         if seeds:
@@ -211,7 +192,7 @@ def main(
         
         # Create configuration
         config = Config(
-            input_path=input,
+            input_path=video_path,
             clips_count=clips,
             min_clip_length=min_len,
             max_clip_length=max_len,
@@ -219,27 +200,22 @@ def main(
             peak_spacing=spacing,
             with_motion=with_motion,
             align_to_beat=align_to_beat,
+            export_video=export_video,
+            export_dir=export_dir,
+            export_format=export_format,
+            auto_reframe=auto_reframe,
             seed_timestamps=seed_timestamps,
             output_json=out_json,
             output_csv=out_csv,
             threads=threads,
             ram_limit=ram_limit,
-            export_video=export_video,
-            export_dir=export_dir,
-            export_format=export_format.lower(),
-            auto_reframe=auto_reframe,
             progress_events=progress_events,
-            enable_object_tracking=enable_object_tracking,
-            tracking_smoothness=tracking_smoothness,
-            tracking_confidence_threshold=tracking_confidence,
-            fallback_to_center=not no_fallback_center,
-            debug_tracking=debug_tracking,
         )
         
         # Create and run analyzer
         analyzer = Analyzer(config)
         
-        console.print(f"[bold green]Starting analysis of {input}[/bold green]")
+        console.print(f"[bold green]Starting analysis of {video_path}[/bold green]")
         console.print(f"[blue]Configuration:[/blue]")
         console.print(f"  • Clips: {clips}")
         console.print(f"  • Length: {min_len}-{max_len}s")
@@ -247,21 +223,13 @@ def main(
         console.print(f"  • Spacing: {spacing} frames")
         console.print(f"  • Motion analysis: {'Yes' if with_motion else 'No'}")
         console.print(f"  • Beat alignment: {'Yes' if align_to_beat else 'No'}")
+        console.print(f"  • Video export: {'Yes' if export_video else 'No'}")
+        if export_video:
+            console.print(f"  • Export directory: {export_dir}")
+            console.print(f"  • Export format: {export_format}")
+            console.print(f"  • Auto-reframe: {'Yes' if auto_reframe else 'No'}")
         if seed_timestamps:
             console.print(f"  • Seeds: {len(seed_timestamps)} timestamps")
-        if export_video:
-            console.print(f"  • Video export: Yes ({export_format} format)")
-            console.print(f"  • Export directory: {export_dir}")
-            if auto_reframe:
-                console.print(f"  • Auto-reframe: Yes")
-            if enable_object_tracking:
-                console.print(f"  • Object tracking: Yes")
-                console.print(f"  • Tracking smoothness: {tracking_smoothness}")
-                console.print(f"  • Tracking confidence: {tracking_confidence}")
-                if debug_tracking:
-                    console.print(f"  • Debug tracking: Yes")
-        if progress_events:
-            console.print(f"  • Progress events: Yes")
         
         # Run analysis
         results = analyzer.analyze()
@@ -270,6 +238,90 @@ def main(
         console.print(f"[blue]Results saved to:[/blue]")
         console.print(f"  • JSON: {out_json}")
         console.print(f"  • CSV: {out_csv}")
+        
+        # Display video export results if enabled
+        if export_video and "video_export" in results:
+            video_export = results["video_export"]
+            console.print(f"[blue]Video clips exported:[/blue]")
+            console.print(f"  • Total clips: {video_export['total_clips']}")
+            console.print(f"  • Exported: {video_export['exported_clips']}")
+            console.print(f"  • Failed: {video_export['failed_clips']}")
+            console.print(f"  • Directory: {export_dir}")
+            console.print(f"  • Format: {export_format}")
+            
+            if video_export['failed_clips'] > 0:
+                console.print(f"[yellow]⚠️  Some clips failed to export. Check logs for details.[/yellow]")
+        
+        # Export metrics if requested
+        if metrics:
+            from .metrics import format_prometheus_metrics, AnalysisMetrics, AnalysisStage, StageTiming
+            metrics_data = results.get("metrics", {})
+            if metrics_data:
+                # Convert JSON metrics back to AnalysisMetrics for formatting
+                analysis_metrics = AnalysisMetrics()
+                
+                # Set timing data
+                timings = metrics_data.get("timings", {})
+                analysis_metrics.total_duration = timings.get("total_duration_seconds", 0.0)
+                
+                # Reconstruct stage timings from JSON data
+                stages_data = timings.get("stages", {})
+                for stage_name, stage_data in stages_data.items():
+                    try:
+                        stage = AnalysisStage(stage_name)
+                        duration = stage_data.get("duration_seconds", 0.0)
+                        start_time = stage_data.get("start_time", 0.0)
+                        end_time = stage_data.get("end_time", start_time + duration)
+                        
+                        # Create StageTiming object
+                        stage_timing = StageTiming(
+                            stage=stage,
+                            start_time=start_time,
+                            end_time=end_time,
+                            duration=duration
+                        )
+                        analysis_metrics.stage_timings[stage] = stage_timing
+                    except ValueError:
+                        # Skip unknown stages
+                        continue
+                
+                # Set other metrics
+                novelty = metrics_data.get("novelty", {})
+                analysis_metrics.novelty_peaks_count = novelty.get("peaks_count", 0)
+                analysis_metrics.novelty_frames_count = novelty.get("frames_count", 0)
+                
+                audio = metrics_data.get("audio", {})
+                analysis_metrics.audio_duration = audio.get("duration_seconds", 0.0)
+                analysis_metrics.audio_sample_rate = audio.get("sample_rate_hz", 0)
+                analysis_metrics.audio_bytes = audio.get("bytes", 0)
+                
+                # Set video metrics
+                video = metrics_data.get("video", {})
+                analysis_metrics.video_duration = video.get("duration_seconds", 0.0)
+                analysis_metrics.video_bytes = video.get("bytes", 0)
+                analysis_metrics.video_width = video.get("width_pixels", 0)
+                analysis_metrics.video_height = video.get("height_pixels", 0)
+                
+                processing = metrics_data.get("processing", {})
+                analysis_metrics.clips_generated = processing.get("clips_generated", 0)
+                analysis_metrics.segments_built = processing.get("segments_built", 0)
+                analysis_metrics.memory_peak_mb = processing.get("memory_peak_mb", 0.0)
+                
+                configuration = metrics_data.get("configuration", {})
+                analysis_metrics.clips_requested = configuration.get("clips_requested", 0)
+                analysis_metrics.min_clip_length = configuration.get("min_clip_length_seconds", 0.0)
+                analysis_metrics.max_clip_length = configuration.get("max_clip_length_seconds", 0.0)
+                analysis_metrics.with_motion = configuration.get("with_motion", False)
+                analysis_metrics.align_to_beat = configuration.get("align_to_beat", False)
+                
+                # Write Prometheus metrics
+                prometheus_metrics = format_prometheus_metrics(analysis_metrics)
+                with open(metrics, 'w') as f:
+                    f.write(prometheus_metrics)
+                
+                console.print(f"  • Metrics: {metrics}")
+                logger.info(f"Prometheus metrics exported to {metrics}")
+        
         
     except KeyboardInterrupt:
         console.print("\n[yellow]Analysis interrupted by user[/yellow]")

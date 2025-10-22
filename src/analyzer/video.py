@@ -1,14 +1,14 @@
 """
-Video export functionality for Epic D1.
-Handles 16:9 original export with stream copy / fallback h264.
+Video export module for MVP Analyzer.
+
+This module handles video clip export functionality.
 """
 
 import logging
 import subprocess
-import tempfile
+import json
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
-import json
 
 from .config import Config
 from .people_detector import PeopleDetector
@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 class VideoExporter:
-    """Exports video clips with stream copy or h264 transcoding."""
-
+    """Exports video clips based on analysis results."""
+    
     def __init__(self, config: Config):
-        """Initialize video exporter with configuration."""
+        """Initialize the video exporter."""
         self.config = config
         
         # Initialize people detector if auto-reframe is enabled
@@ -59,7 +59,7 @@ class VideoExporter:
             "-c:a", "aac",
             "-b:a", "128k"
         ]
-
+    
     def export_clips(self, segments_data: Dict[str, Any], input_video_path: Path, output_dir: Path) -> Dict[str, Any]:
         """
         Export video clips from segments.
@@ -319,76 +319,6 @@ class VideoExporter:
                 "success": False,
                 "error": error_msg
             }
-
-    def get_video_info(self, video_path: Path) -> Dict[str, Any]:
-        """
-        Get video information using FFprobe.
-        
-        Args:
-            video_path: Path to video file
-            
-        Returns:
-            Dict containing video metadata
-        """
-        cmd = [
-            "ffprobe",
-            "-v", "quiet",
-            "-print_format", "json",
-            "-show_format",
-            "-show_streams",
-            str(video_path)
-        ]
-        
-        try:
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            if result.returncode == 0:
-                return json.loads(result.stdout)
-            else:
-                logger.error(f"FFprobe failed: {result.stderr}")
-                return {"error": f"FFprobe failed: {result.stderr}"}
-                
-        except Exception as e:
-            error_msg = f"Error getting video info: {str(e)}"
-            logger.error(error_msg)
-            return {"error": error_msg}
-
-    def is_codec_compatible(self, video_path: Path) -> Dict[str, bool]:
-        """
-        Check if video codecs are compatible for stream copy.
-        
-        Args:
-            video_path: Path to video file
-            
-        Returns:
-            Dict containing compatibility information
-        """
-        video_info = self.get_video_info(video_path)
-        
-        if "error" in video_info:
-            return {"error": video_info["error"]}
-        
-        compatible = {"video": False, "audio": False}
-        
-        # Check video streams
-        for stream in video_info.get("streams", []):
-            if stream.get("codec_type") == "video":
-                codec = stream.get("codec_name", "")
-                # Check for common compatible codecs
-                if codec in ["h264", "h265", "hevc", "vp9", "av1"]:
-                    compatible["video"] = True
-            elif stream.get("codec_type") == "audio":
-                codec = stream.get("codec_name", "")
-                # Check for common compatible audio codecs
-                if codec in ["aac", "mp3", "ac3", "eac3"]:
-                    compatible["audio"] = True
-        
-        return compatible
 
     def _transcode_with_format(self, input_path: Path, output_path: Path, start_time: float, end_time: float, tracking_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """

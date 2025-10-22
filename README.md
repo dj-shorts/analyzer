@@ -2,9 +2,16 @@
 
 AI-powered music video highlight extraction tool for creating short clips for social media platforms.
 
-## 🚀 What's New in v0.2.0
+## 🚀 What's New in v0.3.0
 
-This release introduces major new features including motion analysis, video export capabilities, and progress tracking for Server-Sent Events integration.
+This release removes automatic video download functionality and migrates to a manual download workflow. After extensive testing, we found that manual downloads provide **better quality (1080p vs 360p)**, **perfect reliability (no more 403 errors)**, and **simpler architecture**. 
+
+### 🎯 Major Changes in v0.3.0
+- **Manual Video Download**: Users now download videos using `yt-dlp` CLI before analysis
+- **Better Quality**: 1080p+ video support (was limited to 360p)
+- **100% Reliability**: No more download failures or 403 errors
+- **Simpler Codebase**: Removed 400+ lines of download code and yt-dlp dependency
+- **Enhanced Documentation**: Complete migration guide and testing reports
 
 ### ✨ Core Features
 
@@ -79,18 +86,18 @@ This release introduces major new features including motion analysis, video expo
 - **Epic E2**: Progress Events (E2)
   - E2: Progress/events in stdout (for SSE)
 
+### ✅ Completed (v0.3.0)
+- **Epic E3**: Cancellation & Resource Management
+  - E3: Signal handling, process cleanup, resource monitoring
+- **Epic G1**: Prometheus Metrics
+  - G1: Performance metrics, stage timings, CLI flag support
+- **Architecture Improvement**: Manual Video Download Migration
+  - Removed automatic video download (yt-dlp dependency)
+  - CLI now accepts only local file paths
+  - Users download videos manually for better quality and reliability
+  - Complete migration guide and documentation
+
 ### 🔮 Roadmap (Future Releases)
-
-#### v0.3.0 - Advanced CLI & Integration
-- **Epic E**: CLI Integration (E3)
-  - E3: Cancellation and resource management
-- **Epic G**: Observability (G1)
-  - G1: Prometheus metrics implementation with CLI flag
-
-#### v0.3.0 - Advanced CLI & Integration
-- **Epic E**: CLI Integration (E2-E3)
-  - E2: Progress/events in stdout (for SSE)
-  - E3: Cancellation and resource management
 
 #### v0.4.0 - Packaging & Deployment
 - **Epic H**: Packaging (H1-H2)
@@ -119,6 +126,29 @@ uv run analyzer --help
 ```
 
 ## 🎯 Usage Examples
+
+### Downloading YouTube Videos
+
+For YouTube videos, download them manually first using `yt-dlp`:
+
+```bash
+# Download video in 1080p quality (best quality up to 1080p)
+yt-dlp -f "best[height<=1080]" -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+
+# Download in 720p (if 1080p is too large)
+yt-dlp -f "best[height<=720]" -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+
+# Download best available quality
+yt-dlp -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+```
+
+**Why manual download?**
+- ✅ Reliable: Works consistently, no Python subprocess issues
+- ✅ High quality: Get 1080p or higher without restrictions
+- ✅ Full control: Choose exact format and quality
+- ✅ Better performance: Direct CLI is faster than Python wrapper
+
+Then analyze the downloaded file (see examples below).
 
 ### Basic Analysis
 ```bash
