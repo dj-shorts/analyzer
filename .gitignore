@@ -66,11 +66,18 @@ README_DEPLOY.md
 run_create_issues.sh
 TESTING_GUIDE.md
 
-# Test files
+# Test files and output data
 test_video.mp4
+test_short.mp4
 clips/
+data/
+!data/.gitkeep
 *.mkv
 *.mov
+
+# Release artifacts
+*.tar.gz
+*.zip
 
 # Temporary files
 *.tmp

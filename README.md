@@ -1,6 +1,15 @@
-# MVP Analyzer
-
-AI-powered music video highlight extraction tool for creating short clips for social media platforms.
+<div align="center">
+  <img src="assets/logo.svg" alt="DJ Shorts Analyzer Logo" width="120" height="120">
+  
+  # DJ Shorts Analyzer
+  
+  AI-powered music video highlight extraction tool for creating short clips for social media platforms.
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+  [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+  [![Release](https://img.shields.io/github/v/release/dj-shorts/analyzer)](https://github.com/dj-shorts/analyzer/releases)
+  
+</div>
 
 ## 🚀 What's New in v0.3.0
 
