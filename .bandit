@@ -1,0 +1,25 @@
+[bandit]
+exclude_dirs = [
+    "/tests",
+    "/.venv",
+    "/.pytest_cache",
+    "/__pycache__"
+]
+
+skips = [
+    "B101",  # assert_used
+    "B601",  # paramiko_calls
+]
+
+# Confidence level
+# HIGH: Only report high confidence issues
+# MEDIUM: Report medium and high confidence issues
+# LOW: Report all issues
+level = "LOW"
+
+# Severity level
+# HIGH: Only report high severity issues
+# MEDIUM: Report medium and high severity issues  
+# LOW: Report all issues
+severity = "LOW"
+

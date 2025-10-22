@@ -1,0 +1,95 @@
+name: Security
+
+on:
+  push:
+    branches: [main, release/*]
+  pull_request:
+    branches: [main, release/*]
+  schedule:
+    - cron: '0 0 * * 0'  # Weekly on Sunday
+
+jobs:
+  bandit:
+    name: Bandit (Security Linter)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install bandit
+        run: pip install bandit[toml]
+      
+      - name: Run bandit
+        run: bandit -r src/ -f json -o bandit-report.json
+        continue-on-error: true
+      
+      - name: Upload bandit report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  safety:
+    name: Safety (Dependency Vulnerabilities)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install uv
+        run: pip install uv
+      
+      - name: Install dependencies
+        run: uv sync
+      
+      - name: Install safety
+        run: pip install safety
+      
+      - name: Run safety check
+        run: safety check --json > safety-report.json
+        continue-on-error: true
+      
+      - name: Upload safety report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: safety-report
+          path: safety-report.json
+
+  trivy:
+    name: Trivy (Docker Image Scan)
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        run: docker build -t dj-shorts/analyzer:test .
+      
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'dj-shorts/analyzer:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
