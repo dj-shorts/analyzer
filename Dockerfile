@@ -5,6 +5,12 @@ FROM python:3.11-slim AS builder
 # Set working directory
 WORKDIR /build
 
+# Install build dependencies for compiling Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install uv for dependency management
 RUN pip install --no-cache-dir uv>=0.5.0
 
