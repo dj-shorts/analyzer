@@ -69,6 +69,9 @@ class ResultExporter:
         """
         csv_path = self.config.output_csv
         
+        # Ensure parent directory exists
+        csv_path.parent.mkdir(parents=True, exist_ok=True)
+        
         with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             fieldnames = [
                 'clip_id', 'start', 'end', 'center', 'score', 
@@ -107,6 +110,9 @@ class ResultExporter:
             Path to exported JSON file
         """
         json_path = self.config.output_json
+        
+        # Ensure parent directory exists
+        json_path.parent.mkdir(parents=True, exist_ok=True)
         
         # Prepare JSON data structure
         json_data = {
