@@ -8,8 +8,9 @@ WORKDIR /build
 # Install uv for dependency management
 RUN pip install --no-cache-dir uv>=0.5.0
 
-# Copy dependency files
-COPY pyproject.toml uv.lock ./
+# Copy dependency files and source code for uv to build
+COPY pyproject.toml uv.lock README.md ./
+COPY src/ ./src/
 
 # Install dependencies using uv
 RUN uv sync --frozen --no-dev
