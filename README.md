@@ -8,6 +8,9 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
   [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
   [![Release](https://img.shields.io/github/v/release/dj-shorts/analyzer)](https://github.com/dj-shorts/analyzer/releases)
+  [![CI](https://github.com/dj-shorts/analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/dj-shorts/analyzer/actions/workflows/ci.yml)
+  [![Security](https://github.com/dj-shorts/analyzer/actions/workflows/security.yml/badge.svg)](https://github.com/dj-shorts/analyzer/actions/workflows/security.yml)
+  [![Docker](https://github.com/dj-shorts/analyzer/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dj-shorts/analyzer/actions/workflows/docker-publish.yml)
   
 </div>
 
