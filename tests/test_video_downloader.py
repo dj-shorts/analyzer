@@ -63,56 +63,50 @@ class TestVideoDownloader:
         assert downloader.is_supported_url("https://onedrive.live.com/123")
         assert downloader.is_supported_url("https://dropbox.com/s/123/file.mp4")
     
-    @patch('analyzer.video_downloader.yt_dlp.YoutubeDL')
-    def test_download_video_success(self, mock_ydl_class):
+    @patch('analyzer.video_downloader.subprocess.run')
+    def test_download_video_success(self, mock_subprocess):
         """Test successful video download."""
-        # Mock yt-dlp
-        mock_ydl = MagicMock()
-        mock_ydl_class.return_value = mock_ydl
+        # Mock subprocess.run for successful download
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "[download] Test Video.mp4 has already been downloaded"
+        mock_result.stderr = ""
+        mock_subprocess.return_value = mock_result
         
-        # Mock video info
-        mock_info = {
-            'title': 'Test Video',
-            'duration': 120,
-            'uploader': 'Test User',
-            'view_count': 1000,
-            'upload_date': '20231201',
-            'description': 'Test description',
-            'thumbnail': 'https://example.com/thumb.jpg',
-            'webpage_url': 'https://youtube.com/watch?v=123'
-        }
-        mock_ydl.extract_info.return_value = mock_info
-        
-        # Mock file creation
+        # Mock file creation in a fresh directory (no existing files)
         with tempfile.TemporaryDirectory() as temp_dir:
-            downloader = VideoDownloader(Path(temp_dir))
+            download_dir = Path(temp_dir) / "downloads"
+            download_dir.mkdir()
+            downloader = VideoDownloader(download_dir)
             
-            # Mock the downloaded file
-            mock_file = Path(temp_dir) / "test_video.mp4"
-            mock_file.touch()
+            # Mock the downloaded file (will be created during download)
+            mock_file = download_dir / "Test_Video.mp4"
+            mock_file.write_text("fake video content")
             
-            with patch.object(downloader, '_find_downloaded_file', return_value=mock_file):
+            # Need to create file AFTER check for existing files but BEFORE find
+            with patch.object(downloader, '_find_downloaded_file_from_template', return_value=mock_file):
+                # Clear the directory before test to avoid "existing file" logic
+                import time
+                # Set old modification time to avoid "recent file" detection
+                os.utime(mock_file, (time.time() - 86500, time.time() - 86500))
+                
                 result = downloader.download_video("https://youtube.com/watch?v=123")
             
             assert result["success"] is True
             assert result["file_path"] == mock_file
-            assert result["title"] == "Test Video"
-            assert result["duration"] == 120
-            assert result["uploader"] == "Test User"
-            assert result["view_count"] == 1000
-            assert result["upload_date"] == "20231201"
-            assert result["description"] == "Test description"
-            assert result["thumbnail"] == "https://example.com/thumb.jpg"
-            assert result["webpage_url"] == "https://youtube.com/watch?v=123"
-            assert "file_size" in result
+            assert result["title"] == "Test_Video"
+            assert result["filesize"] > 0
+            assert result["format"] == 'best[height<=1080]'
     
-    @patch('analyzer.video_downloader.yt_dlp.YoutubeDL')
-    def test_download_video_failure(self, mock_ydl_class):
+    @patch('analyzer.video_downloader.subprocess.run')
+    def test_download_video_failure(self, mock_subprocess):
         """Test video download failure."""
-        # Mock yt-dlp to raise exception
-        mock_ydl = MagicMock()
-        mock_ydl_class.return_value = mock_ydl
-        mock_ydl.extract_info.side_effect = Exception("Download failed")
+        # Mock subprocess.run to return failure
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        mock_result.stderr = "ERROR: Video unavailable"
+        mock_subprocess.return_value = mock_result
         
         with tempfile.TemporaryDirectory() as temp_dir:
             downloader = VideoDownloader(Path(temp_dir))
@@ -120,28 +114,29 @@ class TestVideoDownloader:
             
             assert result["success"] is False
             assert "error" in result
-            assert result["url"] == "https://youtube.com/watch?v=123"
+            assert result["file_path"] is None
     
-    @patch('analyzer.video_downloader.yt_dlp.YoutubeDL')
-    def test_get_video_info_success(self, mock_ydl_class):
+    @patch('analyzer.video_downloader.subprocess.run')
+    def test_get_video_info_success(self, mock_subprocess):
         """Test getting video info without download."""
-        # Mock yt-dlp
-        mock_ydl = MagicMock()
-        mock_ydl_class.return_value = mock_ydl
-        
-        # Mock video info
-        mock_info = {
-            'title': 'Test Video',
-            'duration': 120,
-            'uploader': 'Test User',
-            'view_count': 1000,
-            'upload_date': '20231201',
-            'description': 'Test description',
-            'thumbnail': 'https://example.com/thumb.jpg',
-            'webpage_url': 'https://youtube.com/watch?v=123',
-            'formats': [{'format_id': 'best', 'ext': 'mp4'}]
+        # Mock subprocess.run for info extraction
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = '''
+        {
+            "title": "Test Video",
+            "duration": 120,
+            "uploader": "Test User",
+            "view_count": 1000,
+            "upload_date": "20231201",
+            "description": "Test description",
+            "thumbnail": "https://example.com/thumb.jpg",
+            "webpage_url": "https://youtube.com/watch?v=123",
+            "formats": [{"format_id": "best", "ext": "mp4"}]
         }
-        mock_ydl.extract_info.return_value = mock_info
+        '''
+        mock_result.stderr = ""
+        mock_subprocess.return_value = mock_result
         
         downloader = VideoDownloader()
         result = downloader.get_video_info("https://youtube.com/watch?v=123")
@@ -157,13 +152,11 @@ class TestVideoDownloader:
         assert result["webpage_url"] == "https://youtube.com/watch?v=123"
         assert "formats" in result
     
-    @patch('analyzer.video_downloader.yt_dlp.YoutubeDL')
-    def test_get_video_info_failure(self, mock_ydl_class):
+    @patch('analyzer.video_downloader.subprocess.run')
+    def test_get_video_info_failure(self, mock_subprocess):
         """Test getting video info failure."""
-        # Mock yt-dlp to raise exception
-        mock_ydl = MagicMock()
-        mock_ydl_class.return_value = mock_ydl
-        mock_ydl.extract_info.side_effect = Exception("Info extraction failed")
+        # Mock subprocess.run to raise exception
+        mock_subprocess.side_effect = Exception("Info extraction failed")
         
         downloader = VideoDownloader()
         result = downloader.get_video_info("https://youtube.com/watch?v=123")
@@ -172,8 +165,8 @@ class TestVideoDownloader:
         assert "error" in result
         assert result["url"] == "https://youtube.com/watch?v=123"
     
-    def test_find_downloaded_file_with_output_path(self):
-        """Test finding downloaded file with specified output path."""
+    def test_find_downloaded_file_from_template(self):
+        """Test finding downloaded file from yt-dlp template."""
         with tempfile.TemporaryDirectory() as temp_dir:
             downloader = VideoDownloader(Path(temp_dir))
             
@@ -181,24 +174,47 @@ class TestVideoDownloader:
             test_file = Path(temp_dir) / "test_video.mp4"
             test_file.touch()
             
-            mock_info = {'title': 'Test Video'}
-            result = downloader._find_downloaded_file(mock_info, test_file)
+            template = str(Path(temp_dir) / "test_video.%(ext)s")
+            result = downloader._find_downloaded_file_from_template(template)
             
             assert result == test_file
     
-    def test_find_downloaded_file_by_title(self):
-        """Test finding downloaded file by title."""
-        with tempfile.TemporaryDirectory() as temp_dir:
-            downloader = VideoDownloader(Path(temp_dir))
-            
-            # Create a test file with title-based name
-            test_file = downloader.download_dir / "Test Video.mp4"
-            test_file.touch()
-            
-            mock_info = {'title': 'Test Video'}
-            result = downloader._find_downloaded_file(mock_info, None)
-            
-            assert result == test_file
+    def test_analyze_download_errors_no_errors(self):
+        """Test error analysis with no errors."""
+        downloader = VideoDownloader()
+        output = "[download] Downloading video..."
+        
+        errors = downloader._analyze_download_errors(output)
+        
+        assert errors['has_critical_errors'] is False
+        assert errors['has_403_errors'] is False
+        assert errors['error_summary'] == 'No errors'
+    
+    def test_analyze_download_errors_403(self):
+        """Test error analysis with 403 errors."""
+        downloader = VideoDownloader()
+        output = "[download] HTTP Error 403: Forbidden"
+        
+        errors = downloader._analyze_download_errors(output)
+        
+        assert errors['has_critical_errors'] is True
+        assert errors['has_403_errors'] is True
+        assert errors['errors_403'] == 1
+        assert '403 Forbidden errors' in errors['error_summary']
+    
+    def test_analyze_download_errors_skipped_fragments(self):
+        """Test error analysis with skipped fragments."""
+        downloader = VideoDownloader()
+        output = """
+        [download] Skipping fragment 1
+        [download] Skipping fragment 2
+        [download] Skipping fragment 3
+        """
+        
+        errors = downloader._analyze_download_errors(output)
+        
+        assert errors['has_critical_errors'] is True
+        assert errors['skipped_fragments'] == 3
     
     def test_cleanup_downloads(self):
         """Test cleanup of download directory."""
