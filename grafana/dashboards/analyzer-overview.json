@@ -1,0 +1,113 @@
+{
+  "dashboard": {
+    "title": "DJ Shorts Analyzer Overview",
+    "tags": ["analyzer", "video", "processing"],
+    "timezone": "browser",
+    "schemaVersion": 16,
+    "version": 1,
+    "refresh": "30s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Processing Performance",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "analyzer_processing_time_seconds",
+            "legendFormat": "Processing Time",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Time"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Clips Generated",
+        "type": "stat",
+        "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4},
+        "targets": [
+          {
+            "expr": "analyzer_clips_generated_total",
+            "refId": "A"
+          }
+        ],
+        "options": {
+          "graphMode": "area",
+          "colorMode": "value"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "analyzer_memory_usage_bytes",
+            "legendFormat": "Memory (bytes)",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "bytes", "label": "Memory"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 4,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8},
+        "targets": [
+          {
+            "expr": "analyzer_cpu_usage_percent",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {"format": "percent", "label": "CPU"},
+          {"format": "short"}
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Stage Timings",
+        "type": "graph",
+        "gridPos": {"x": 0, "y": 16, "w": 24, "h": 8},
+        "targets": [
+          {
+            "expr": "analyzer_stage_duration_seconds{stage=\"audio\"}",
+            "legendFormat": "Audio Extraction",
+            "refId": "A"
+          },
+          {
+            "expr": "analyzer_stage_duration_seconds{stage=\"beat\"}",
+            "legendFormat": "Beat Detection",
+            "refId": "B"
+          },
+          {
+            "expr": "analyzer_stage_duration_seconds{stage=\"motion\"}",
+            "legendFormat": "Motion Analysis",
+            "refId": "C"
+          },
+          {
+            "expr": "analyzer_stage_duration_seconds{stage=\"export\"}",
+            "legendFormat": "Video Export",
+            "refId": "D"
+          }
+        ],
+        "yaxes": [
+          {"format": "s", "label": "Duration"},
+          {"format": "short"}
+        ]
+      }
+    ]
+  },
+  "overwrite": true
+}
+

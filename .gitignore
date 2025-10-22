@@ -79,6 +79,10 @@ data/
 *.tar.gz
 *.zip
 
+# Monitoring data
+metrics/
+!metrics/.gitkeep
+
 # Temporary files
 *.tmp
 *.temp

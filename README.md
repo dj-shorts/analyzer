@@ -137,6 +137,24 @@ docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest analyzer /data/vi
 
 See [docs/DOCKER.md](docs/DOCKER.md) for complete Docker usage guide.
 
+### Option 1.5: Docker Compose with Monitoring (Full Stack)
+
+Run analyzer with Prometheus and Grafana monitoring:
+
+```bash
+# Start all services (analyzer, prometheus, grafana)
+docker-compose up -d
+
+# Run analysis
+docker-compose run --rm analyzer analyzer /data/video.mp4 --clips 3 --metrics /metrics/output.txt
+
+# Access monitoring
+open http://localhost:3000  # Grafana (admin/admin)
+open http://localhost:9090  # Prometheus
+```
+
+See [docs/MONITORING.md](docs/MONITORING.md) for monitoring setup guide.
+
 ### Option 2: Local Installation
 
 Using `uv` for dependency management:
