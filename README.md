@@ -120,7 +120,26 @@ This release removes automatic video download functionality and migrates to a ma
 
 ## 🛠️ Installation
 
-This project uses `uv` for dependency management:
+### Option 1: Docker (Recommended)
+
+The easiest way to run the analyzer:
+
+```bash
+# Pull the image
+docker pull ghcr.io/dj-shorts/analyzer:latest
+
+# Or build locally
+docker build -t dj-shorts/analyzer:latest .
+
+# Run analyzer
+docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest analyzer /data/video.mp4 --clips 3
+```
+
+See [docs/DOCKER.md](docs/DOCKER.md) for complete Docker usage guide.
+
+### Option 2: Local Installation
+
+Using `uv` for dependency management:
 
 ```bash
 # Clone repository
