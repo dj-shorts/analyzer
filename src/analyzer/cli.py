@@ -30,13 +30,7 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 @click.command()
-@click.argument("input", type=str)
-@click.option(
-    "--download-dir",
-    type=click.Path(path_type=Path),
-    default="downloads",
-    help="Directory for downloaded videos (default: downloads)"
-)
+@click.argument("video_file", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--clips", 
     "-k", 
@@ -86,14 +80,14 @@ def setup_logging(verbose: bool = False) -> None:
 @click.option(
     "--out-json", 
     type=click.Path(path_type=Path), 
-    default="highlights.json",
-    help="Output JSON file path (default: highlights.json)"
+    default="data/highlights.json",
+    help="Output JSON file path (default: data/highlights.json)"
 )
 @click.option(
     "--out-csv", 
     type=click.Path(path_type=Path), 
-    default="highlights.csv",
-    help="Output CSV file path (default: highlights.csv)"
+    default="data/highlights.csv",
+    help="Output CSV file path (default: data/highlights.csv)"
 )
 @click.option(
     "--verbose", 
@@ -144,8 +138,7 @@ def setup_logging(verbose: bool = False) -> None:
     help="Enable progress events in stdout for SSE"
 )
 def main(
-    input: str,
-    download_dir: Path,
+    video_file: Path,
     clips: int,
     min_len: float,
     max_len: float,
@@ -169,51 +162,19 @@ def main(
     """
     MVP Analyzer - Extract highlights from music videos.
     
-    INPUT: Path to input video file (mp4, mov, etc.) or URL (YouTube, Google Drive, etc.)
+    VIDEO_FILE: Path to input video file (mp4, mov, webm, etc.)
+    
+    For YouTube videos, download manually first:
+        yt-dlp -f "best[height<=1080]" -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+    Then analyze the downloaded file:
+        analyzer video.mp4 --clips 3 --export-video
     """
     setup_logging(verbose)
     
     logger = logging.getLogger(__name__)
     
     try:
-        # Determine if input is a URL or file path
-        input_path = Path(input)
-        video_path = None
-        
-        if input.startswith(('http://', 'https://')):
-            # Input is a URL - download the video
-            from .video_downloader import VideoDownloader, is_video_url
-            
-            if not is_video_url(input):
-                console.print(f"[red]Error: Unsupported video URL: {input}[/red]")
-                console.print("[yellow]Supported platforms: YouTube, Vimeo, Google Drive, OneDrive, Dropbox, direct video links[/yellow]")
-                sys.exit(1)
-            
-            console.print(f"[blue]Downloading video from: {input}[/blue]")
-            downloader = VideoDownloader(download_dir)
-            
-            # Generate output filename based on URL
-            output_filename = f"downloaded_video_{hash(input) % 10000}.mp4"
-            output_path = download_dir / output_filename
-            
-            download_result = downloader.download_video(input, output_path)
-            
-            if not download_result["success"]:
-                console.print(f"[red]Download failed: {download_result['error']}[/red]")
-                sys.exit(1)
-            
-            video_path = download_result["file_path"]
-            console.print(f"[green]✓ Video downloaded: {video_path}[/green]")
-            console.print(f"[blue]Title: {download_result['title']}[/blue]")
-            console.print(f"[blue]Duration: {download_result['duration']}s[/blue]")
-            
-        elif input_path.exists():
-            # Input is a file path
-            video_path = input_path
-        else:
-            console.print(f"[red]Error: File not found: {input}[/red]")
-            console.print("[yellow]Provide either a valid file path or a supported video URL[/yellow]")
-            sys.exit(1)
+        video_path = video_file
         
         # Parse seed timestamps if provided
         seed_timestamps = []

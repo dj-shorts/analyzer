@@ -120,6 +120,29 @@ uv run analyzer --help
 
 ## 🎯 Usage Examples
 
+### Downloading YouTube Videos
+
+For YouTube videos, download them manually first using `yt-dlp`:
+
+```bash
+# Download video in 1080p quality (best quality up to 1080p)
+yt-dlp -f "best[height<=1080]" -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+
+# Download in 720p (if 1080p is too large)
+yt-dlp -f "best[height<=720]" -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+
+# Download best available quality
+yt-dlp -o "video.mp4" "https://www.youtube.com/watch?v=VIDEO_ID"
+```
+
+**Why manual download?**
+- ✅ Reliable: Works consistently, no Python subprocess issues
+- ✅ High quality: Get 1080p or higher without restrictions
+- ✅ Full control: Choose exact format and quality
+- ✅ Better performance: Direct CLI is faster than Python wrapper
+
+Then analyze the downloaded file (see examples below).
+
 ### Basic Analysis
 ```bash
 # Analyze video and extract highlights

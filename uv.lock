@@ -30,7 +30,6 @@ dependencies = [
     { name = "scipy" },
     { name = "soundfile" },
     { name = "tqdm" },
-    { name = "yt-dlp" },
 ]
 
 [package.optional-dependencies]
@@ -70,7 +69,6 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.10.0,<2.0.0" },
     { name = "soundfile", specifier = ">=0.12.0,<1.0.0" },
     { name = "tqdm", specifier = ">=4.65.0,<5.0.0" },
-    { name = "yt-dlp", specifier = ">=2023.12.30,<2025.0.0" },
 ]
 provides-extras = ["dev"]
 
@@ -1461,13 +1459,4 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/15/22/9ee70a2574a4f4599c47dd506532914ce044817c7752a79b6a51286319bc/urllib3-2.5.0.tar.gz", hash = "sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760", size = 393185, upload-time = "2025-06-18T14:07:41.644Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a7/c2/fe1e52489ae3122415c51f387e221dd0773709bad6c6cdaa599e8a2c5185/urllib3-2.5.0-py3-none-any.whl", hash = "sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc", size = 129795, upload-time = "2025-06-18T14:07:40.39Z" },
-]
-
-[[package]]
-name = "yt-dlp"
-version = "2024.12.23"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/88/ea/f30e5925c5b9109d2f8e47b87bb7e7feac1a6c496b5324deb352c2002cf4/yt_dlp-2024.12.23.tar.gz", hash = "sha256:ac0e72b5a9017ba104b4258546201a7cedc38e8bd20727e0c63b77c829b425e9", size = 2914953, upload-time = "2024-12-23T23:54:08.304Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/d3/dc656c921f45baaba4d439292194b5be7f48b3558fcc38941aca16fa5afa/yt_dlp-2024.12.23-py3-none-any.whl", hash = "sha256:2fc08a5221a0379628ac4e7324c6c69a95b9fdfa7a7ca3187444b3b7451e38be", size = 3176724, upload-time = "2024-12-23T23:54:04.96Z" },
 ]
