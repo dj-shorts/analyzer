@@ -91,6 +91,7 @@ jobs:
           context: .
           file: config/Dockerfile
           push: false
+          load: true
           tags: dj-shorts/analyzer:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
