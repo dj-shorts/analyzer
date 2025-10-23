@@ -16,13 +16,13 @@
 
 ## 🚀 What's New in v0.4.1
 
-This release introduces **TestSprite Integration** for advanced test reporting and analytics.
+This release focuses on **stability and performance improvements**.
 
 ### 🎯 Major Changes in v0.4.1
-- **🧪 TestSprite Integration**: Advanced test reporting with screenshots, videos, and analytics
-- **📊 Test Analytics**: Historical tracking, flaky test detection, and performance metrics
 - **🔧 Enhanced Testing**: Improved test configuration and reporting capabilities
 - **📈 Test Coverage**: Comprehensive test suite with ~200 tests across multiple categories
+- **🚀 Performance**: Optimized audio and video processing algorithms
+- **🐛 Bug Fixes**: Various stability improvements and bug fixes
 
 ### 🎯 Previous Changes in v0.4.0
 - **🐳 Docker Support**: Complete containerization with multi-stage builds
@@ -101,10 +101,6 @@ uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical \
 # Run tests
 uv run pytest
 
-# Run tests with TestSprite integration
-export TESTSPRITE_ENABLED=true
-uv run pytest -v
-
 # Code quality
 uv run ruff format analyzer tests
 uv run ruff check analyzer tests
@@ -131,7 +127,6 @@ uv run mypy analyzer
 - **Production Ready**: ✅ Yes
 - **Docker Support**: ✅ Complete containerization
 - **CI/CD Pipeline**: ✅ Automated testing and security scanning
-- **TestSprite Integration**: ✅ Advanced test reporting and analytics
 
 ## 🐛 Support
 

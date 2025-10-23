@@ -15,7 +15,7 @@ import pytest
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from scripts.setup import DependencyInstaller  # noqa: E402
+from deploy.setup import DependencyInstaller  # noqa: E402
 
 
 class TestDependencyInstaller:
@@ -31,7 +31,7 @@ class TestDependencyInstaller:
         assert isinstance(installer.installed_packages, list)
         assert isinstance(installer.failed_packages, list)
 
-    @patch("scripts.setup.shutil.which")
+    @patch("deploy.setup.shutil.which")
     def test_detect_package_managers_macos(self, mock_which):
         """Test package manager detection on macOS."""
         mock_which.side_effect = lambda cmd: cmd if cmd in ["brew", "port"] else None
@@ -44,7 +44,7 @@ class TestDependencyInstaller:
         assert "brew" in managers
         assert "port" in managers
 
-    @patch("scripts.setup.shutil.which")
+    @patch("deploy.setup.shutil.which")
     def test_detect_package_managers_linux(self, mock_which):
         """Test package manager detection on Linux."""
 
@@ -68,7 +68,7 @@ class TestDependencyInstaller:
         assert "pacman" in managers
         assert "zypper" in managers
 
-    @patch("scripts.setup.shutil.which")
+    @patch("deploy.setup.shutil.which")
     def test_detect_package_managers_windows(self, mock_which):
         """Test package manager detection on Windows."""
         mock_which.side_effect = lambda cmd: cmd if cmd in ["choco", "winget"] else None
@@ -105,7 +105,7 @@ class TestDependencyInstaller:
             assert "apt" in packages
             assert "choco" in packages
 
-    @patch("scripts.setup.subprocess.run")
+    @patch("deploy.setup.subprocess.run")
     def test_run_command_success(self, mock_run):
         """Test successful command execution."""
         mock_result = MagicMock()
@@ -120,7 +120,7 @@ class TestDependencyInstaller:
         assert output == "test output"
         mock_run.assert_called_once()
 
-    @patch("scripts.setup.subprocess.run")
+    @patch("deploy.setup.subprocess.run")
     def test_run_command_failure(self, mock_run):
         """Test failed command execution."""
         mock_run.side_effect = subprocess.CalledProcessError(1, "test")
@@ -131,7 +131,7 @@ class TestDependencyInstaller:
         assert success is False
         assert isinstance(output, str)
 
-    @patch("scripts.setup.subprocess.run")
+    @patch("deploy.setup.subprocess.run")
     def test_run_command_not_found(self, mock_run):
         """Test command not found."""
         mock_run.side_effect = FileNotFoundError()

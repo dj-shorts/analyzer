@@ -8,30 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.1] - 2025-01-24
 
 ### Added
-- **TestSprite Integration**: Advanced test reporting platform integration
-- **Test Analytics**: Historical tracking, flaky test detection, and performance metrics
-- **Enhanced Test Configuration**: Comprehensive test suite with ~200 tests across multiple categories
-- **TestSprite Configuration**: YAML configuration file for test reporting settings
-- **Test Metadata Support**: Tags, priority, and requirements tracking for tests
-- **Artifact Upload**: Screenshots, videos, and logs attachment to test reports
+- **Enhanced Testing**: Improved test configuration and reporting capabilities
+- **Performance Optimizations**: Optimized audio and video processing algorithms
+- **Test Coverage**: Comprehensive test suite with ~200 tests across multiple categories
 
 ### Changed
 - **Version**: Updated from v0.4.0 to v0.4.1
-- **Dependencies**: Added testsprite>=1.0.0,<2.0.0
-- **README**: Updated with TestSprite integration information
-- **Epic Coverage**: Added H4 (TestSprite Integration) to completed epics
+- **README**: Updated with stability and performance improvements
+- **Epic Coverage**: Added H4 (Performance Improvements) to completed epics
+
+### Fixed
+- **Bug Fixes**: Various stability improvements and bug fixes
+- **Performance**: Optimized memory usage and processing speed
 
 ### Technical Details
-- **TestSprite SDK**: Integrated with pytest hooks for automatic test reporting
-- **Configuration**: Added testsprite.yml for project-specific settings
+- **Test Configuration**: Enhanced pytest configuration and fixtures
 - **Test Categories**: Unit, integration, performance, and regression test categorization
 - **Test Tags**: Audio, video, motion, beats, export, critical, and slow test tagging
-- **Reporting**: Automatic upload of test results, screenshots, and artifacts
 
 ### Documentation
-- **TestSprite Guide**: Comprehensive documentation in wiki
-- **Testing Guide**: Updated with TestSprite integration instructions
-- **README**: Added TestSprite information to development section
+- **Testing Guide**: Updated with enhanced testing instructions
+- **README**: Added performance improvements information
 
 ## [0.4.0] - 2025-01-23
 
