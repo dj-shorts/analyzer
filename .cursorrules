@@ -1,0 +1,43 @@
+# DJ Shorts Analyzer - Cursor AI Rules
+
+## Project Structure
+- Main repository: `/Users/terryberk/git/djshorts/analyzer`
+- Wiki repository: `/Users/terryberk/git/djshorts/analyzer/wiki` (separate git repo)
+- Wiki URL: https://github.com/dj-shorts/analyzer.wiki.git
+- Public wiki: https://github.com/dj-shorts/analyzer/wiki
+
+## Wiki Management
+- Wiki is a separate git repository with its own .git folder
+- Uses `master` branch as default (GitHub wiki requirement)
+- To update wiki: `cd wiki/ && git add . && git commit -m "message" && git push origin master`
+- Changes appear immediately on GitHub wiki page
+
+## Documentation Strategy
+- Main README.md: Streamlined (125 lines) with essential info and wiki links
+- Wiki: Detailed documentation (10+ comprehensive guides)
+- All detailed documentation moved from main README to wiki
+- Cross-references: README links to specific wiki pages
+
+## Wiki Files Structure
+- Home.md - Main wiki page with documentation index
+- Setup-Guide.md - Installation and configuration
+- Docker-Guide.md - Docker usage and deployment
+- Monitoring-Setup.md - Prometheus + Grafana setup
+- CI-CD-Pipeline.md - CI/CD documentation
+- Testing-Guide.md - Testing procedures
+- TestSprite-Integration.md - Advanced testing
+- Epic-Reports.md - Development progress
+- Manual-Download-Migration.md - Manual download workflow
+- README.md - Wiki-specific documentation
+
+## Key Commands
+- Docker: `docker run --rm -v $(pwd)/data:/data ghcr.io/dj-shorts/analyzer:latest python -m analyzer.cli /data/video.mp4 --clips 3`
+- Local: `uv run analyzer video.mp4 --clips 6`
+- Tests: `uv run pytest`
+- Wiki update: `cd wiki/ && git add . && git commit -m "Update docs" && git push origin master`
+
+## Important Notes
+- Always use `python -m analyzer.cli` instead of `analyzer` command
+- Docker commands use `config/Dockerfile` and `config/docker-compose.yml`
+- Wiki should be updated when adding new features
+- Keep main README.md concise and reference wiki for details
