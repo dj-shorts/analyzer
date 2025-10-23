@@ -8,9 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-import librosa
-from .audio_security import safe_load_audio, validate_audio_file
-
+from .audio_security import safe_load_audio
 from .config import Config
 
 logger = logging.getLogger(__name__)

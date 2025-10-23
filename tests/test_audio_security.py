@@ -2,21 +2,22 @@
 Tests for audio security utilities.
 """
 
-import pytest
-import numpy as np
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pytest
 
 from analyzer.audio_security import (
-    validate_audio_file,
-    safe_load_audio,
-    safe_resample_audio,
-    safe_to_mono,
     MAX_AUDIO_DURATION_SECONDS,
     MAX_AUDIO_FILE_SIZE_MB,
     MAX_SAMPLE_RATE,
     MIN_SAMPLE_RATE,
+    safe_load_audio,
+    safe_resample_audio,
+    safe_to_mono,
+    validate_audio_file,
 )
 
 
@@ -35,7 +36,7 @@ class TestAudioSecurity:
             # Create a file that's too large (simulate)
             temp_file.write(b"x" * (MAX_AUDIO_FILE_SIZE_MB + 1) * 1024 * 1024)
             temp_file.flush()
-            
+
             try:
                 with pytest.raises(ValueError, match="Audio file too large"):
                     validate_audio_file(temp_path)
@@ -48,7 +49,7 @@ class TestAudioSecurity:
             temp_path = Path(temp_file.name)
             temp_file.write(b"test")
             temp_file.flush()
-            
+
             try:
                 with pytest.raises(ValueError, match="Unsupported audio format"):
                     validate_audio_file(temp_path)
@@ -58,16 +59,16 @@ class TestAudioSecurity:
     def test_safe_resample_audio_invalid_sample_rate(self):
         """Test resampling with invalid sample rates."""
         audio = np.array([1.0, 2.0, 3.0])
-        
+
         with pytest.raises(ValueError, match="Target sample rate too high"):
             safe_resample_audio(audio, 22050, MAX_SAMPLE_RATE + 1)
-        
+
         with pytest.raises(ValueError, match="Target sample rate too low"):
             safe_resample_audio(audio, 22050, MIN_SAMPLE_RATE - 1)
-        
+
         with pytest.raises(ValueError, match="Sample rates must be positive"):
             safe_resample_audio(audio, 0, 22050)
-        
+
         with pytest.raises(ValueError, match="Sample rates must be positive"):
             safe_resample_audio(audio, 22050, -1)
 
@@ -110,9 +111,11 @@ class TestAudioSecurity:
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
             temp_path = Path(temp_file.name)
             # Write minimal WAV header
-            temp_file.write(b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00")
+            temp_file.write(
+                b"RIFF\x24\x00\x00\x00WAVEfmt \x10\x00\x00\x00\x01\x00\x01\x00\x44\xac\x00\x00\x88X\x01\x00\x02\x00\x10\x00data\x00\x00\x00\x00"
+            )
             temp_file.flush()
-            
+
             try:
                 # This should pass validation but fail at loading (no real audio data)
                 validate_audio_file(temp_path)

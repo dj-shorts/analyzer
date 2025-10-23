@@ -6,9 +6,9 @@ import logging
 from typing import Any
 
 import librosa
-from .audio_security import safe_resample_audio, safe_to_mono
 import numpy as np
 
+from .audio_security import safe_resample_audio, safe_to_mono
 from .config import Config
 
 logger = logging.getLogger(__name__)
