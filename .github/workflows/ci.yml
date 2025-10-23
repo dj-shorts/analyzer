@@ -85,6 +85,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       
       - name: Build Docker image
+        id: build-docker
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -96,7 +97,6 @@ jobs:
       - name: Test Docker image
         run: |
           docker run --rm dj-shorts/analyzer:test python -m analyzer.cli --help
-        needs: [build-docker]
 
 
 # CI/CD Pipeline Status Check
