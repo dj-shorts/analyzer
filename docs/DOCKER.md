@@ -6,13 +6,13 @@ Complete guide for running DJ Shorts Analyzer in Docker containers.
 
 ```bash
 # Build the image
-docker build -t dj-shorts/analyzer:latest .
+docker build -f config/Dockerfile -t dj-shorts/analyzer:latest .
 
 # Run analyzer on a video
 docker run --rm \
   -v $(pwd)/data:/data \
   dj-shorts/analyzer:latest \
-  analyzer /data/video.mp4 --clips 3 --export-video
+  python -m analyzer.cli /data/video.mp4 --clips 3 --export-video --out-json /data/highlights.json --out-csv /data/highlights.csv
 ```
 
 ## 📦 Building the Image
@@ -20,26 +20,26 @@ docker run --rm \
 ### Basic Build
 
 ```bash
-docker build -t dj-shorts/analyzer:latest .
+docker build -f config/Dockerfile -t dj-shorts/analyzer:latest .
 ```
 
 ### Build with specific tag
 
 ```bash
-docker build -t dj-shorts/analyzer:v0.4.0 .
+docker build -f config/Dockerfile -t dj-shorts/analyzer:v0.4.0 .
 ```
 
 ### Build options
 
 ```bash
 # Build without cache
-docker build --no-cache -t dj-shorts/analyzer:latest .
+docker build --no-cache -f config/Dockerfile -t dj-shorts/analyzer:latest .
 
 # Build with progress output
-docker build --progress=plain -t dj-shorts/analyzer:latest .
+docker build --progress=plain -f config/Dockerfile -t dj-shorts/analyzer:latest .
 
 # Build for specific platform
-docker build --platform linux/amd64 -t dj-shorts/analyzer:latest .
+docker build --platform linux/amd64 -f config/Dockerfile -t dj-shorts/analyzer:latest .
 ```
 
 ## 🚀 Running the Container
@@ -48,13 +48,13 @@ docker build --platform linux/amd64 -t dj-shorts/analyzer:latest .
 
 ```bash
 # Show help
-docker run --rm dj-shorts/analyzer:latest
+docker run --rm dj-shorts/analyzer:latest python -m analyzer.cli --help
 
 # Analyze a video
 docker run --rm \
   -v /path/to/videos:/data \
   dj-shorts/analyzer:latest \
-  analyzer /data/video.mp4 --clips 3
+  python -m analyzer.cli /data/video.mp4 --clips 3 --out-json /data/highlights.json --out-csv /data/highlights.csv
 ```
 
 ### With Video Export
@@ -64,7 +64,7 @@ docker run --rm \
   -v $(pwd)/data:/data \
   -v $(pwd)/clips:/clips \
   dj-shorts/analyzer:latest \
-  analyzer /data/video.mp4 --clips 6 --export-video
+  python -m analyzer.cli /data/video.mp4 --clips 6 --export-video --out-json /data/highlights.json --out-csv /data/highlights.csv
 ```
 
 ### With All Options
@@ -74,12 +74,14 @@ docker run --rm \
   -v $(pwd)/data:/data \
   -v $(pwd)/clips:/clips \
   dj-shorts/analyzer:latest \
-  analyzer /data/video.mp4 \
+  python -m analyzer.cli /data/video.mp4 \
     --clips 6 \
     --with-motion \
     --align-to-beat \
     --export-video \
-    --metrics /data/metrics.txt
+    --metrics /data/metrics.txt \
+    --out-json /data/highlights.json \
+    --out-csv /data/highlights.csv
 ```
 
 ### Interactive Mode
@@ -92,7 +94,7 @@ docker run --rm -it \
   /bin/bash
 
 # Then run analyzer commands
-analyzer /data/video.mp4 --clips 3
+python -m analyzer.cli /data/video.mp4 --clips 3 --out-json /data/highlights.json --out-csv /data/highlights.csv
 ```
 
 ## 📊 Volume Mounting
@@ -212,7 +214,7 @@ Health check runs every 30 seconds and verifies:
 ```bash
 # Solution: Update uv.lock
 uv lock --upgrade
-docker build --no-cache -t dj-shorts/analyzer:latest .
+docker build --no-cache -f config/Dockerfile -t dj-shorts/analyzer:latest .
 ```
 
 **Problem**: ffmpeg not found
@@ -249,7 +251,7 @@ docker run --rm dj-shorts/analyzer:latest python -c "import sys; print(sys.path)
 
 ```bash
 # Cache pip packages (faster rebuilds)
-docker build --cache-from dj-shorts/analyzer:latest -t dj-shorts/analyzer:latest .
+docker build --cache-from dj-shorts/analyzer:latest -f config/Dockerfile -t dj-shorts/analyzer:latest .
 ```
 
 ### 2. Pre-download Videos
@@ -258,7 +260,7 @@ Download videos to local disk before running analyzer:
 
 ```bash
 yt-dlp -o "data/video.mp4" "https://youtube.com/watch?v=VIDEO_ID"
-docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest analyzer /data/video.mp4
+docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest python -m analyzer.cli /data/video.mp4 --out-json /data/highlights.json --out-csv /data/highlights.csv
 ```
 
 ### 3. Parallel Processing
@@ -271,7 +273,7 @@ for video in data/*.mp4; do
     -v $(pwd)/data:/data \
     -v $(pwd)/clips:/clips \
     dj-shorts/analyzer:latest \
-    analyzer "/data/$(basename $video)" --clips 3 --export-video
+    python -m analyzer.cli "/data/$(basename $video)" --clips 3 --export-video --out-json "/data/$(basename $video .mp4)_highlights.json" --out-csv "/data/$(basename $video .mp4)_highlights.csv"
 done
 ```
 
@@ -281,11 +283,11 @@ done
 
 ```yaml
 - name: Build Docker image
-  run: docker build -t dj-shorts/analyzer:${{ github.sha }} .
+  run: docker build -f config/Dockerfile -t dj-shorts/analyzer:${{ github.sha }} .
 
 - name: Test Docker image
   run: |
-    docker run --rm dj-shorts/analyzer:${{ github.sha }} --help
+    docker run --rm dj-shorts/analyzer:${{ github.sha }} python -m analyzer.cli --help
     
 - name: Push to registry
   run: |

@@ -13,10 +13,10 @@ The monitoring stack includes:
 
 ```bash
 # Start all services
-docker-compose up -d
+docker-compose -f config/docker-compose.yml up -d
 
 # Check services are running
-docker-compose ps
+docker-compose -f config/docker-compose.yml ps
 
 # Access Grafana
 open http://localhost:3000
@@ -64,10 +64,10 @@ git clone https://github.com/dj-shorts/analyzer.git
 cd analyzer
 
 # Start monitoring stack
-docker-compose up -d
+docker-compose -f config/docker-compose.yml up -d
 
 # View logs
-docker-compose logs -f
+docker-compose -f config/docker-compose.yml logs -f
 ```
 
 ### Initial Configuration
@@ -128,7 +128,7 @@ Pre-configured dashboard showing:
 
 ### Prometheus Configuration
 
-Edit `prometheus/prometheus.yml`:
+Edit `monitoring/prometheus/prometheus.yml`:
 
 ```yaml
 scrape_configs:
@@ -201,11 +201,13 @@ histogram_quantile(0.95, analyzer_processing_time_seconds)
 
 ```bash
 # Run analyzer with metrics
-docker-compose run --rm analyzer \
-  analyzer /data/video.mp4 \
+docker-compose -f config/docker-compose.yml run --rm analyzer \
+  python -m analyzer.cli /data/video.mp4 \
     --clips 3 \
     --export-video \
-    --metrics /metrics/analysis.txt
+    --metrics /metrics/analysis.txt \
+    --out-json /data/highlights.json \
+    --out-csv /data/highlights.csv
 ```
 
 ### Batch Processing
@@ -213,11 +215,13 @@ docker-compose run --rm analyzer \
 ```bash
 # Process multiple videos
 for video in data/*.mp4; do
-  docker-compose run --rm analyzer \
-    analyzer "/data/$(basename $video)" \
+  docker-compose -f config/docker-compose.yml run --rm analyzer \
+    python -m analyzer.cli "/data/$(basename $video)" \
       --clips 6 \
       --export-video \
-      --metrics "/metrics/$(basename $video .mp4).txt"
+      --metrics "/metrics/$(basename $video .mp4).txt" \
+      --out-json "/data/$(basename $video .mp4)_highlights.json" \
+      --out-csv "/data/$(basename $video .mp4)_highlights.csv"
 done
 ```
 
@@ -237,36 +241,36 @@ done
 curl http://localhost:9090/api/v1/targets
 
 # View Prometheus logs
-docker-compose logs prometheus
+docker-compose -f config/docker-compose.yml logs prometheus
 
 # Verify metrics file exists
-ls -la metrics/
+ls -la monitoring/metrics/
 ```
 
 ### Grafana dashboard not loading
 
 ```bash
 # Check Grafana logs
-docker-compose logs grafana
+docker-compose -f config/docker-compose.yml logs grafana
 
 # Verify datasource connection
 curl http://localhost:3000/api/datasources
 
 # Restart Grafana
-docker-compose restart grafana
+docker-compose -f config/docker-compose.yml restart grafana
 ```
 
 ### Services not starting
 
 ```bash
 # Check all services
-docker-compose ps
+docker-compose -f config/docker-compose.yml ps
 
 # View all logs
-docker-compose logs
+docker-compose -f config/docker-compose.yml logs
 
 # Restart everything
-docker-compose down && docker-compose up -d
+docker-compose -f config/docker-compose.yml down && docker-compose -f config/docker-compose.yml up -d
 ```
 
 ### High memory usage

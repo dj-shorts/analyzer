@@ -150,7 +150,7 @@ docker pull ghcr.io/dj-shorts/analyzer:latest
 docker build -f config/Dockerfile -t dj-shorts/analyzer:latest .
 
 # Run analyzer
-docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest analyzer /data/video.mp4 --clips 3
+docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest python -m analyzer.cli /data/video.mp4 --clips 3
 ```
 
 See [docs/DOCKER.md](docs/DOCKER.md) for complete Docker usage guide.
@@ -164,7 +164,7 @@ Run analyzer with Prometheus and Grafana monitoring:
 docker-compose -f config/docker-compose.yml up -d
 
 # Run analysis
-docker-compose -f config/docker-compose.yml run --rm analyzer analyzer /data/video.mp4 --clips 3 --metrics /metrics/output.txt
+docker-compose -f config/docker-compose.yml run --rm analyzer python -m analyzer.cli /data/video.mp4 --clips 3 --metrics /metrics/output.txt --out-json /data/highlights.json --out-csv /data/highlights.csv
 
 # Access monitoring
 open http://localhost:3000  # Grafana (admin/zxcqwe123)
@@ -264,17 +264,17 @@ uv run analyzer video.mp4 --clips 6 --export-video --export-format vertical \
 ```
 
 ### Object Tracking
-Функция динамического трекинга позволяет держать объект (например, DJ) по центру кадра при экспорте вертикального и квадратного видео.
+Dynamic tracking feature keeps objects (e.g., DJ) centered in the frame when exporting vertical and square videos.
 
-- Включение: `--enable-object-tracking`
-- Плавность: `--tracking-smoothness 0.0-1.0` (по умолчанию 0.8)
-- Порог уверенности: `--tracking-confidence 0.0-1.0` (по умолчанию 0.5)
-- Фолбэк к центру: по умолчанию включён; отключить — `--no-fallback-center`
-- Отладка: `--debug-tracking` сохранит отладочное видео с оверлеем
+- Enable: `--enable-object-tracking`
+- Smoothness: `--tracking-smoothness 0.0-1.0` (default: 0.8)
+- Confidence threshold: `--tracking-confidence 0.0-1.0` (default: 0.5)
+- Fallback to center: enabled by default; disable with `--no-fallback-center`
+- Debug: `--debug-tracking` saves debug video with overlay
 
-Примечания:
-- Формат `original` (16:9) не использует автокроп и сохраняет исходное кадрирование.
-- Для `vertical` и `square` при включённом трекинге используется динамический кроп; если трекинг выключен, применяется центрированный кроп или `--auto-reframe`.
+Notes:
+- `original` format (16:9) doesn't use auto-crop and preserves source framing.
+- For `vertical` and `square` formats with tracking enabled, dynamic crop is used; if tracking is disabled, center crop or `--auto-reframe` is applied.
 
 ### Progress Events
 ```bash
