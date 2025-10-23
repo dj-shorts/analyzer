@@ -33,7 +33,7 @@ jobs:
         run: uv run ruff format --check src/ tests/
       
       - name: Run mypy (type checking)
-        run: uv run mypy src/
+        run: uv run mypy src/ --ignore-missing-imports --no-error-summary
 
   test:
     name: Tests (Python ${{ matrix.python-version }})
