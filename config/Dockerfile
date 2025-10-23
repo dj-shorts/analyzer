@@ -25,12 +25,15 @@ RUN uv sync --frozen --no-dev
 FROM python:3.11-slim
 
 # Install system dependencies required for analyzer
+# Update to latest versions for security patches
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    libsndfile1 \
+    && apt-get upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
@@ -49,6 +52,11 @@ COPY pyproject.toml /app/
 
 # Set ownership to non-root user
 RUN chown -R analyzer:analyzer /app
+
+# Set security-focused environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONHASHSEED=random
 
 # Switch to non-root user
 USER analyzer
