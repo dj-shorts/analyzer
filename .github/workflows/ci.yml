@@ -96,5 +96,6 @@ jobs:
       - name: Test Docker image
         run: |
           docker run --rm dj-shorts/analyzer:test python -m analyzer.cli --help
+        needs: [build-docker]
 
 
