@@ -55,13 +55,12 @@ USER analyzer
 
 # Add virtual environment to PATH
 ENV PATH="/app/.venv/bin:$PATH"
-ENV PYTHONPATH="/app"
+ENV PYTHONPATH="/app/src"
 
 # Health check - verify analyzer can be imported
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import analyzer; print('OK')" || exit 1
 
 # Default command - show help
-ENTRYPOINT ["analyzer"]
-CMD ["--help"]
+CMD ["python", "-m", "analyzer.cli", "--help"]
 

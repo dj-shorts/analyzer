@@ -28,15 +28,12 @@ jobs:
       
       - name: Run ruff (linter)
         run: uv run ruff check src/ tests/
-        continue-on-error: true
       
       - name: Run black (formatter check)
         run: uv run black --check src/ tests/
-        continue-on-error: true
       
       - name: Run mypy (type checking)
         run: uv run mypy src/
-        continue-on-error: true
 
   test:
     name: Tests (Python ${{ matrix.python-version }})
@@ -98,5 +95,6 @@ jobs:
       
       - name: Test Docker image
         run: |
-          docker run --rm dj-shorts/analyzer:test --help
+          docker run --rm dj-shorts/analyzer:test python -m analyzer.cli --help
+
 

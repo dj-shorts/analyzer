@@ -1,17 +1,13 @@
 """
-TestSprite Integration Example for pytest.
+TestSprite Integration for pytest.
 
-This file shows how to integrate TestSprite with the test suite.
-To use:
-1. Rename to conftest.py or merge with existing conftest.py
-2. Install TestSprite SDK: uv add testsprite
-3. Set TESTSPRITE_API_KEY environment variable
-4. Set TESTSPRITE_ENABLED=true
+This file integrates TestSprite with the test suite.
 """
 
-import pytest
 import os
 from pathlib import Path
+
+import pytest
 
 # TestSprite configuration
 TESTSPRITE_ENABLED = os.getenv("TESTSPRITE_ENABLED", "false").lower() == "true"
@@ -23,7 +19,7 @@ testsprite_client = None
 if TESTSPRITE_ENABLED:
     try:
         from testsprite import TestSprite
-        
+
         if not TESTSPRITE_API_KEY:
             print("Warning: TESTSPRITE_ENABLED=true but TESTSPRITE_API_KEY not set")
         else:
@@ -48,13 +44,13 @@ def pytest_runtest_makereport(item, call):
     """Hook to report test results to TestSprite."""
     outcome = yield
     report = outcome.get_result()
-    
+
     if report.when == "call" and testsprite_client:
         # Extract test metadata
         tags = []
         priority = "normal"
         requirements = []
-        
+
         # Get markers
         for marker in item.iter_markers():
             if marker.name == "testsprite":
@@ -64,7 +60,7 @@ def pytest_runtest_makereport(item, call):
             else:
                 # Add marker names as tags
                 tags.append(marker.name)
-        
+
         # Report to TestSprite
         try:
             testsprite_client.report_test(
@@ -75,8 +71,8 @@ def pytest_runtest_makereport(item, call):
                 priority=priority,
                 requirements=requirements,
                 error=str(report.longrepr) if report.failed else None,
-                stdout=report.capstdout if hasattr(report, 'capstdout') else None,
-                stderr=report.capstderr if hasattr(report, 'capstderr') else None,
+                stdout=report.capstdout if hasattr(report, "capstdout") else None,
+                stderr=report.capstderr if hasattr(report, "capstderr") else None,
             )
         except Exception as e:
             print(f"Failed to report test to TestSprite: {e}")
@@ -118,33 +114,3 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: Slow test (> 5s)")
     config.addinivalue_line("markers", "requires_ffmpeg: Requires ffmpeg")
     config.addinivalue_line("markers", "requires_video: Requires video file")
-
-
-# Example usage in tests:
-"""
-import pytest
-
-@pytest.mark.testsprite(
-    tags=["audio", "critical"],
-    priority="high",
-    requirements=["REQ-001"],
-)
-@pytest.mark.unit
-def test_audio_extraction(testsprite):
-    # Test code
-    result = extract_audio("video.mp4")
-    
-    # Attach artifacts to TestSprite
-    if testsprite:
-        testsprite.attach_file(result.audio_path, "audio_output")
-    
-    assert result.success
-
-@pytest.mark.integration
-@pytest.mark.slow
-def test_full_pipeline():
-    # Integration test
-    pass
-"""
-
-

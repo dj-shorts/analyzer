@@ -9,16 +9,16 @@ __version__ = "0.1.0"
 __author__ = "TerryBerk"
 __email__ = "radygin.konstantin.s@gmail.com"
 
-from .core import Analyzer
 from .audio import AudioExtractor
+from .core import Analyzer
+from .export import ResultExporter
 from .novelty import NoveltyDetector
 from .peaks import PeakPicker
 from .segments import SegmentBuilder
-from .export import ResultExporter
 
 __all__ = [
     "Analyzer",
-    "AudioExtractor", 
+    "AudioExtractor",
     "NoveltyDetector",
     "PeakPicker",
     "SegmentBuilder",

@@ -1,12 +1,11 @@
 {
-  "dashboard": {
-    "title": "DJ Shorts Analyzer Overview",
-    "tags": ["analyzer", "video", "processing"],
-    "timezone": "browser",
-    "schemaVersion": 16,
-    "version": 1,
-    "refresh": "30s",
-    "panels": [
+  "title": "DJ Shorts Analyzer Overview",
+  "tags": ["analyzer", "video", "processing"],
+  "timezone": "browser",
+  "schemaVersion": 16,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
       {
         "id": 1,
         "title": "Processing Performance",
@@ -107,7 +106,6 @@
         ]
       }
     ]
-  },
-  "overwrite": true
 }
+
 
