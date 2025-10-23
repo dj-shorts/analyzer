@@ -259,10 +259,6 @@ class DynamicCropper:
         validated_positions = []
 
         for center_x, center_y in positions:
-            # Calculate crop bounds
-            video_width - crop_width
-            video_height - crop_height
-
             # Clamp center position to valid crop area
             clamped_x = max(
                 crop_width // 2, min(center_x, video_width - crop_width // 2)

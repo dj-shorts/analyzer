@@ -388,7 +388,7 @@ class TestEndToEndPipelineEpicF2:
 
                 # Verify data types
                 assert int(rows[0]["clip_id"]) == 1
-                assert float(rows[0]["start"]) == 10.0
+                assert abs(float(rows[0]["start"]) - 10.0) < 1e-6  # Use tolerance for float comparison
                 assert rows[0]["seed_based"] == "False"
                 assert rows[0]["aligned"] == "True"
 
