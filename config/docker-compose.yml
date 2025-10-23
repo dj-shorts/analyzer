@@ -4,14 +4,14 @@ services:
   # DJ Shorts Analyzer service
   analyzer:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: config/Dockerfile
     image: dj-shorts/analyzer:latest
     container_name: analyzer
     volumes:
-      - ./data:/data
-      - ./clips:/clips
-      - ./metrics:/metrics
+      - ../data:/data
+      - ../clips:/clips
+      - ../monitoring/metrics:/metrics
     user: "501:20"
     environment:
       - METRICS_ENABLED=true
@@ -28,8 +28,8 @@ services:
     image: prom/prometheus:v2.48.0
     container_name: prometheus
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./metrics:/metrics:ro
+      - ../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../monitoring/metrics:/metrics:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -49,8 +49,8 @@ services:
     image: python:3.11-slim
     container_name: metrics-server
     volumes:
-      - ./metrics:/metrics:ro
-      - ./metrics_server.py:/app/metrics_server.py:ro
+      - ../monitoring/metrics:/metrics:ro
+      - ../monitoring/metrics_server.py:/app/metrics_server.py:ro
     command: ["python", "/app/metrics_server.py"]
     environment:
       - PORT=8000
@@ -66,8 +66,8 @@ services:
     container_name: grafana
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - ../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin

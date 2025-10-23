@@ -14,16 +14,23 @@
   
 </div>
 
-## 🚀 What's New in v0.3.0
+## 🚀 What's New in v0.4.0
 
-This release removes automatic video download functionality and migrates to a manual download workflow. After extensive testing, we found that manual downloads provide **better quality (1080p vs 360p)**, **perfect reliability (no more 403 errors)**, and **simpler architecture**. 
+This release introduces **complete packaging and deployment infrastructure** with Docker support, CI/CD pipeline, monitoring stack, and production-ready deployment capabilities.
 
-### 🎯 Major Changes in v0.3.0
-- **Manual Video Download**: Users now download videos using `yt-dlp` CLI before analysis
+### 🎯 Major Changes in v0.4.0
+- **🐳 Docker Support**: Complete containerization with multi-stage builds
+- **🔄 CI/CD Pipeline**: Automated testing, linting, and security scanning
+- **📊 Monitoring Stack**: Prometheus + Grafana integration for real-time monitoring
+- **🔒 Security**: Bandit, Safety, and Trivy security scanning
+- **📦 Package Management**: Modern Python packaging with uv support
+- **🏗️ Project Structure**: Reorganized codebase with proper directory structure
+
+### 🎯 Previous Changes in v0.3.0
+- **Manual Video Download**: Users download videos using `yt-dlp` CLI before analysis
 - **Better Quality**: 1080p+ video support (was limited to 360p)
 - **100% Reliability**: No more download failures or 403 errors
 - **Simpler Codebase**: Removed 400+ lines of download code and yt-dlp dependency
-- **Enhanced Documentation**: Complete migration guide and testing reports
 
 ### ✨ Core Features
 
@@ -109,12 +116,20 @@ This release removes automatic video download functionality and migrates to a ma
   - Users download videos manually for better quality and reliability
   - Complete migration guide and documentation
 
-### 🔮 Roadmap (Future Releases)
+### ✅ Completed (v0.4.0)
+- **Epic H**: Packaging & Deployment (H1-H4)
+  - H1: Dockerfile for analyzer with multi-stage builds
+  - H2: Docker Compose with Prometheus + Grafana monitoring
+  - H3: CI/CD Pipeline with automated testing and security scanning
+  - H4: TestSprite Integration (prepared for future implementation)
+- **Production Infrastructure**:
+  - Complete Docker containerization
+  - GitHub Actions CI/CD pipeline
+  - Security scanning (Bandit, Safety, Trivy)
+  - Monitoring stack (Prometheus + Grafana)
+  - Modern Python packaging with uv
 
-#### v0.4.0 - Packaging & Deployment
-- **Epic H**: Packaging (H1-H2)
-  - H1: Dockerfile for analyzer
-  - H2: CI: tests, linters, security
+### 🔮 Roadmap (Future Releases)
 
 #### v0.5.0 - Experimental Features
 - **Epic I**: Experiment (I1-I2)
@@ -132,7 +147,7 @@ The easiest way to run the analyzer:
 docker pull ghcr.io/dj-shorts/analyzer:latest
 
 # Or build locally
-docker build -t dj-shorts/analyzer:latest .
+docker build -f config/Dockerfile -t dj-shorts/analyzer:latest .
 
 # Run analyzer
 docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest analyzer /data/video.mp4 --clips 3
@@ -146,13 +161,13 @@ Run analyzer with Prometheus and Grafana monitoring:
 
 ```bash
 # Start all services (analyzer, prometheus, grafana)
-docker-compose up -d
+docker-compose -f config/docker-compose.yml up -d
 
 # Run analysis
-docker-compose run --rm analyzer analyzer /data/video.mp4 --clips 3 --metrics /metrics/output.txt
+docker-compose -f config/docker-compose.yml run --rm analyzer analyzer /data/video.mp4 --clips 3 --metrics /metrics/output.txt
 
 # Access monitoring
-open http://localhost:3000  # Grafana (admin/admin)
+open http://localhost:3000  # Grafana (admin/zxcqwe123)
 open http://localhost:9090  # Prometheus
 ```
 
@@ -416,7 +431,7 @@ See [docs/TESTSPRITE.md](docs/TESTSPRITE.md) for complete testing guide.
 
 ## 🔧 Technical Specifications
 
-- **Python**: 3.11+ support
+- **Python**: 3.11+ support with uv package management
 - **Dependencies**: numpy, librosa, click, pydantic, rich, opencv-python-headless
 - **Audio Processing**: ffmpeg integration with librosa
 - **Motion Analysis**: OpenCV optical flow Farnebäck
@@ -424,6 +439,10 @@ See [docs/TESTSPRITE.md](docs/TESTSPRITE.md) for complete testing guide.
 - **Video Export**: FFmpeg integration with stream copy and H264 transcoding
 - **Beat Analysis**: librosa beat tracking and quantization
 - **Testing**: pytest with comprehensive coverage
+- **Containerization**: Docker with multi-stage builds
+- **CI/CD**: GitHub Actions with automated testing and security scanning
+- **Monitoring**: Prometheus + Grafana stack
+- **Security**: Bandit, Safety, Trivy scanning
 
 ## 📈 Performance
 
@@ -444,8 +463,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 **Ready for production use!** 🚀
 
-**Total Issues Completed**: 18/24 (75% completion rate)  
-**Epic Coverage**: A, B, C, D, E1, E2, F  
+**Total Issues Completed**: 22/27 (81% completion rate)  
+**Epic Coverage**: A, B, C, D, E1, E2, E3, F, G1, H1, H2, H3  
 **Test Coverage**: Comprehensive unit, integration, and performance tests  
 **Production Ready**: ✅ Yes  
-**Repository Status**: ✅ Clean and optimized
+**Docker Support**: ✅ Complete containerization  
+**CI/CD Pipeline**: ✅ Automated testing and security scanning  
+**Monitoring**: ✅ Prometheus + Grafana stack  
+**Repository Status**: ✅ Clean, organized, and production-ready
