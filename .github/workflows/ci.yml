@@ -29,8 +29,8 @@ jobs:
       - name: Run ruff (linter)
         run: uv run ruff check src/ tests/
       
-      - name: Run black (formatter check)
-        run: uv run black --check src/ tests/
+      - name: Run ruff (formatter check)
+        run: uv run ruff format --check src/ tests/
       
       - name: Run mypy (type checking)
         run: uv run mypy src/
@@ -89,6 +89,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: config/Dockerfile
           push: false
           tags: dj-shorts/analyzer:test
           cache-from: type=gha
