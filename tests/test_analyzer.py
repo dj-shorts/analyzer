@@ -297,7 +297,8 @@ class TestAnalyzerIntegration:
         mock_novelty.assert_called_once()
         mock_peaks.assert_called_once()
         mock_segments.assert_called_once()
-        mock_export.assert_called_once()
+        # Verify export was called twice (initial export + final export with metrics)
+        assert mock_export.call_count == 2
 
         # Verify results structure
         assert "csv_path" in results
