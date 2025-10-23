@@ -144,11 +144,14 @@ class TestResourceManagerEpicE3:
         """Test system info retrieval."""
         rm = ResourceManager(max_threads=4, ram_limit="2GB")
 
-        with patch("psutil.virtual_memory") as mock_memory, patch(
-            "psutil.cpu_count"
-        ) as mock_cpu_count:
+        with (
+            patch("psutil.virtual_memory") as mock_memory,
+            patch("psutil.cpu_count") as mock_cpu_count,
+        ):
             mock_memory.return_value = Mock(
-                total=8 * 1024**3, available=4 * 1024**3, percent=50.0  # 8GB  # 4GB
+                total=8 * 1024**3,
+                available=4 * 1024**3,
+                percent=50.0,  # 8GB  # 4GB
             )
             mock_cpu_count.return_value = 8
 
@@ -328,9 +331,10 @@ class TestManagedResourcesContextManagerEpicE3:
 
     def test_managed_resources_with_exception(self):
         """Test managed_resources context manager with exception."""
-        with patch("analyzer.cancellation.CancellationManager") as mock_cm_class, patch(
-            "analyzer.cancellation.ResourceManager"
-        ) as mock_rm_class:
+        with (
+            patch("analyzer.cancellation.CancellationManager") as mock_cm_class,
+            patch("analyzer.cancellation.ResourceManager") as mock_rm_class,
+        ):
             mock_rm = Mock()
             mock_cm = Mock()
             mock_rm_class.return_value = mock_rm

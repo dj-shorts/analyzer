@@ -75,21 +75,26 @@ class TestEndToEndPipelineEpicF2:
         analyzer = Analyzer(self.config)
 
         # Mock the components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
-        ) as _mock_audio, patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            return_value=self._create_mock_novelty_data(),
-        ) as _mock_novelty, patch.object(
-            analyzer.peak_picker,
-            "find_peaks",
-            return_value=self._create_mock_peaks_data(),
-        ) as _mock_peaks, patch.object(
-            analyzer.segment_builder,
-            "build_segments",
-            return_value=self._create_mock_segments_data(),
-        ) as _mock_segments:
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
+            ) as _mock_audio,
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=self._create_mock_novelty_data(),
+            ) as _mock_novelty,
+            patch.object(
+                analyzer.peak_picker,
+                "find_peaks",
+                return_value=self._create_mock_peaks_data(),
+            ) as _mock_peaks,
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value=self._create_mock_segments_data(),
+            ) as _mock_segments,
+        ):
             # Run analysis
             result = analyzer.analyze()
 
@@ -112,21 +117,26 @@ class TestEndToEndPipelineEpicF2:
         analyzer = Analyzer(self.config)
 
         # Mock the components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
-        ) as _mock_audio, patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            return_value=self._create_mock_novelty_data(),
-        ) as _mock_novelty, patch.object(
-            analyzer.peak_picker,
-            "find_peaks",
-            return_value=self._create_mock_peaks_data(),
-        ) as _mock_peaks, patch.object(
-            analyzer.segment_builder,
-            "build_segments",
-            return_value=self._create_mock_segments_data(),
-        ) as _mock_segments:
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
+            ) as _mock_audio,
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=self._create_mock_novelty_data(),
+            ) as _mock_novelty,
+            patch.object(
+                analyzer.peak_picker,
+                "find_peaks",
+                return_value=self._create_mock_peaks_data(),
+            ) as _mock_peaks,
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value=self._create_mock_segments_data(),
+            ) as _mock_segments,
+        ):
             # Test different clip counts
             for clip_count in [2, 4, 6, 8]:
                 config = Config(input_path=Path("test.mp4"), clips_count=clip_count)
@@ -150,22 +160,27 @@ class TestEndToEndPipelineEpicF2:
                 }
 
                 # Mock the components for this analyzer instance
-                with patch.object(
-                    analyzer.audio_extractor,
-                    "extract",
-                    return_value=self.mock_audio_data,
-                ), patch.object(
-                    analyzer.novelty_detector,
-                    "compute_novelty",
-                    return_value=self._create_mock_novelty_data(),
-                ), patch.object(
-                    analyzer.peak_picker,
-                    "find_peaks",
-                    return_value=self._create_mock_peaks_data(),
-                ), patch.object(
-                    analyzer.segment_builder,
-                    "build_segments",
-                    return_value=mock_segments_data,
+                with (
+                    patch.object(
+                        analyzer.audio_extractor,
+                        "extract",
+                        return_value=self.mock_audio_data,
+                    ),
+                    patch.object(
+                        analyzer.novelty_detector,
+                        "compute_novelty",
+                        return_value=self._create_mock_novelty_data(),
+                    ),
+                    patch.object(
+                        analyzer.peak_picker,
+                        "find_peaks",
+                        return_value=self._create_mock_peaks_data(),
+                    ),
+                    patch.object(
+                        analyzer.segment_builder,
+                        "build_segments",
+                        return_value=mock_segments_data,
+                    ),
                 ):
                     result = analyzer.analyze()
 
@@ -212,20 +227,25 @@ class TestEndToEndPipelineEpicF2:
         ]
 
         # Mock the components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
-        ), patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            return_value=self._create_mock_novelty_data(),
-        ), patch.object(
-            analyzer.peak_picker,
-            "find_peaks",
-            return_value=self._create_mock_peaks_data(),
-        ), patch.object(
-            analyzer.segment_builder,
-            "build_segments",
-            return_value={"segments": segments},
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
+            ),
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=self._create_mock_novelty_data(),
+            ),
+            patch.object(
+                analyzer.peak_picker,
+                "find_peaks",
+                return_value=self._create_mock_peaks_data(),
+            ),
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value={"segments": segments},
+            ),
         ):
             # Run analysis
             result = analyzer.analyze()
@@ -242,20 +262,25 @@ class TestEndToEndPipelineEpicF2:
         analyzer = Analyzer(config)
 
         # Mock the components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
-        ), patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            return_value=self._create_mock_novelty_data(),
-        ), patch.object(
-            analyzer.peak_picker,
-            "find_peaks",
-            return_value=self._create_mock_peaks_with_seeds(),
-        ), patch.object(
-            analyzer.segment_builder,
-            "build_segments",
-            return_value=self._create_mock_segments_with_seeds(),
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
+            ),
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=self._create_mock_novelty_data(),
+            ),
+            patch.object(
+                analyzer.peak_picker,
+                "find_peaks",
+                return_value=self._create_mock_peaks_with_seeds(),
+            ),
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value=self._create_mock_segments_with_seeds(),
+            ),
         ):
             result = analyzer.analyze()
 
@@ -269,24 +294,30 @@ class TestEndToEndPipelineEpicF2:
         analyzer = Analyzer(config)
 
         # Mock the components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
-        ), patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            return_value=self._create_mock_novelty_data(),
-        ), patch.object(
-            analyzer.peak_picker,
-            "find_peaks",
-            return_value=self._create_mock_peaks_data(),
-        ), patch.object(
-            analyzer.segment_builder,
-            "build_segments",
-            return_value=self._create_mock_segments_with_alignment(),
-        ), patch.object(
-            analyzer.beat_tracker,
-            "track_beats",
-            return_value=self._create_mock_beats_data(),
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
+            ),
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=self._create_mock_novelty_data(),
+            ),
+            patch.object(
+                analyzer.peak_picker,
+                "find_peaks",
+                return_value=self._create_mock_peaks_data(),
+            ),
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value=self._create_mock_segments_with_alignment(),
+            ),
+            patch.object(
+                analyzer.beat_tracker,
+                "track_beats",
+                return_value=self._create_mock_beats_data(),
+            ),
         ):
             result = analyzer.analyze()
 
@@ -300,20 +331,25 @@ class TestEndToEndPipelineEpicF2:
         analyzer = Analyzer(config)
 
         # Mock the components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
-        ), patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            return_value=self._create_mock_novelty_data(),
-        ), patch.object(
-            analyzer.peak_picker,
-            "find_peaks",
-            return_value=self._create_mock_peaks_data(),
-        ), patch.object(
-            analyzer.segment_builder,
-            "build_segments",
-            return_value=self._create_mock_segments_with_motion(),
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=self.mock_audio_data
+            ),
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=self._create_mock_novelty_data(),
+            ),
+            patch.object(
+                analyzer.peak_picker,
+                "find_peaks",
+                return_value=self._create_mock_peaks_data(),
+            ),
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value=self._create_mock_segments_with_motion(),
+            ),
         ):
             result = analyzer.analyze()
 
@@ -388,7 +424,9 @@ class TestEndToEndPipelineEpicF2:
 
                 # Verify data types
                 assert int(rows[0]["clip_id"]) == 1
-                assert abs(float(rows[0]["start"]) - 10.0) < 1e-6  # Use tolerance for float comparison
+                assert (
+                    abs(float(rows[0]["start"]) - 10.0) < 1e-6
+                )  # Use tolerance for float comparison
                 assert rows[0]["seed_based"] == "False"
                 assert rows[0]["aligned"] == "True"
 
@@ -475,12 +513,15 @@ class TestEndToEndPipelineEpicF2:
         }
 
         # Mock components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=mock_audio_data
-        ), patch.object(
-            analyzer.novelty_detector,
-            "compute_novelty",
-            side_effect=ValueError("Audio too short for analysis"),
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=mock_audio_data
+            ),
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                side_effect=ValueError("Audio too short for analysis"),
+            ),
         ):
             with pytest.raises(ValueError, match="Audio too short for analysis"):
                 analyzer.analyze()
@@ -740,14 +781,23 @@ class TestPerformanceEpicF2:
         }
 
         # Mock components
-        with patch.object(
-            analyzer.audio_extractor, "extract", return_value=mock_audio_data
-        ), patch.object(
-            analyzer.novelty_detector, "compute_novelty", return_value=mock_novelty_data
-        ), patch.object(
-            analyzer.peak_picker, "find_peaks", return_value=mock_peaks_data
-        ), patch.object(
-            analyzer.segment_builder, "build_segments", return_value=mock_segments_data
+        with (
+            patch.object(
+                analyzer.audio_extractor, "extract", return_value=mock_audio_data
+            ),
+            patch.object(
+                analyzer.novelty_detector,
+                "compute_novelty",
+                return_value=mock_novelty_data,
+            ),
+            patch.object(
+                analyzer.peak_picker, "find_peaks", return_value=mock_peaks_data
+            ),
+            patch.object(
+                analyzer.segment_builder,
+                "build_segments",
+                return_value=mock_segments_data,
+            ),
         ):
             start_time = time.time()
             result = analyzer.analyze()
@@ -1147,9 +1197,9 @@ class TestRealVideoIntegrationEpicF2:
                 )
 
                 # Should succeed
-                assert (
-                    result.returncode == 0
-                ), f"Failed for {video_path}: {result.stderr}"
+                assert result.returncode == 0, (
+                    f"Failed for {video_path}: {result.stderr}"
+                )
 
                 # Verify output
                 assert os.path.exists(json_path)

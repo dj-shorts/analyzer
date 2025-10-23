@@ -191,7 +191,7 @@ class JSONSchemaValidator:
                         assert row["aligned"].lower() in ["true", "false"]
                         float(row["length"])
                     except (ValueError, KeyError) as e:
-                        logger.error(f"CSV row {i+1} validation error: {e}")
+                        logger.error(f"CSV row {i + 1} validation error: {e}")
                         return False
 
                 logger.debug(f"CSV validation successful: {len(rows)} rows")

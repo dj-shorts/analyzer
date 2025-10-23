@@ -9,6 +9,7 @@ import pytest
 def test_data_dir():
     """Provide path to test data directory."""
     from pathlib import Path
+
     return Path(__file__).parent.parent / "data"
 
 
