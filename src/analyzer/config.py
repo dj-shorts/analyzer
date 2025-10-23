@@ -3,56 +3,99 @@ Configuration models for MVP Analyzer.
 """
 
 from pathlib import Path
-from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class Config(BaseModel):
     """Main configuration for the analyzer."""
-    
+
     # Input/Output paths
     input_path: Path = Field(..., description="Path to input video file")
-    output_json: Path = Field(default=Path("highlights.json"), description="Output JSON file path")
-    output_csv: Path = Field(default=Path("highlights.csv"), description="Output CSV file path")
-    
+    output_json: Path = Field(
+        default=Path("highlights.json"), description="Output JSON file path"
+    )
+    output_csv: Path = Field(
+        default=Path("highlights.csv"), description="Output CSV file path"
+    )
+
     # Analysis parameters
-    clips_count: int = Field(default=6, ge=1, le=50, description="Number of clips to extract")
-    min_clip_length: float = Field(default=15.0, gt=0, description="Minimum clip length in seconds")
-    max_clip_length: float = Field(default=30.0, gt=0, description="Maximum clip length in seconds")
+    clips_count: int = Field(
+        default=6, ge=1, le=50, description="Number of clips to extract"
+    )
+    min_clip_length: float = Field(
+        default=15.0, gt=0, description="Minimum clip length in seconds"
+    )
+    max_clip_length: float = Field(
+        default=30.0, gt=0, description="Maximum clip length in seconds"
+    )
     pre_roll: float = Field(default=10.0, ge=0, description="Pre-roll time in seconds")
-    
+
     # Peak detection parameters
-    peak_spacing: int = Field(default=80, gt=0, description="Minimum spacing between peaks in frames")
-    min_clip_separation: float = Field(default=60.0, gt=0, description="Minimum separation between clips in seconds")
-    
+    peak_spacing: int = Field(
+        default=80, gt=0, description="Minimum spacing between peaks in frames"
+    )
+    min_clip_separation: float = Field(
+        default=60.0, gt=0, description="Minimum separation between clips in seconds"
+    )
+
     # Feature flags
     with_motion: bool = Field(default=False, description="Include motion analysis")
-    align_to_beat: bool = Field(default=False, description="Align clips to beat boundaries")
-    
+    align_to_beat: bool = Field(
+        default=False, description="Align clips to beat boundaries"
+    )
+
     # Video export settings
     export_video: bool = Field(default=False, description="Export video clips")
-    export_dir: Path = Field(default=Path("clips"), description="Directory for exported video clips")
-    export_format: str = Field(default="original", description="Export format: original, vertical, or square")
-    auto_reframe: bool = Field(default=False, description="Enable auto-reframe with people detection")
-    
+    export_dir: Path = Field(
+        default=Path("clips"), description="Directory for exported video clips"
+    )
+    export_format: str = Field(
+        default="original", description="Export format: original, vertical, or square"
+    )
+    auto_reframe: bool = Field(
+        default=False, description="Enable auto-reframe with people detection"
+    )
+
     # Progress events
-    progress_events: bool = Field(default=False, description="Enable progress events in stdout for SSE")
-    
+    progress_events: bool = Field(
+        default=False, description="Enable progress events in stdout for SSE"
+    )
+
     # Object tracking settings
-    enable_object_tracking: bool = Field(default=False, description="Enable dynamic object tracking for video export")
-    tracking_smoothness: float = Field(default=0.8, ge=0.0, le=1.0, description="Tracking smoothness factor (0.0=no smoothing, 1.0=maximum smoothing)")
-    tracking_confidence_threshold: float = Field(default=0.5, ge=0.0, le=1.0, description="Minimum confidence threshold for object detection")
-    fallback_to_center: bool = Field(default=True, description="Fallback to center crop when object tracking fails")
-    debug_tracking: bool = Field(default=False, description="Enable debug visualization of object tracking")
-    
+    enable_object_tracking: bool = Field(
+        default=False, description="Enable dynamic object tracking for video export"
+    )
+    tracking_smoothness: float = Field(
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description="Tracking smoothness factor (0.0=no smoothing, 1.0=maximum smoothing)",
+    )
+    tracking_confidence_threshold: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Minimum confidence threshold for object detection",
+    )
+    fallback_to_center: bool = Field(
+        default=True, description="Fallback to center crop when object tracking fails"
+    )
+    debug_tracking: bool = Field(
+        default=False, description="Enable debug visualization of object tracking"
+    )
+
     # Seed timestamps (in seconds)
-    seed_timestamps: List[float] = Field(default_factory=list, description="Seed timestamps for peak detection")
-    
+    seed_timestamps: list[float] = Field(
+        default_factory=list, description="Seed timestamps for peak detection"
+    )
+
     # Performance settings
-    threads: Optional[int] = Field(default=None, ge=1, description="Number of threads to use")
-    ram_limit: Optional[str] = Field(default=None, description="RAM limit (e.g., '2GB')")
-    
+    threads: int | None = Field(
+        default=None, ge=1, description="Number of threads to use"
+    )
+    ram_limit: str | None = Field(default=None, description="RAM limit (e.g., '2GB')")
+
     @field_validator("max_clip_length")
     @classmethod
     def max_length_must_be_greater_than_min(cls, v, info):
@@ -60,7 +103,7 @@ class Config(BaseModel):
         if info.data.get("min_clip_length") and v <= info.data["min_clip_length"]:
             raise ValueError("max_clip_length must be greater than min_clip_length")
         return v
-    
+
     @field_validator("export_format")
     @classmethod
     def export_format_must_be_valid(cls, v):
@@ -69,7 +112,7 @@ class Config(BaseModel):
         if v not in valid_formats:
             raise ValueError(f"export_format must be one of {valid_formats}")
         return v
-    
+
     @field_validator("seed_timestamps")
     @classmethod
     def seeds_must_be_positive(cls, v):
@@ -78,8 +121,5 @@ class Config(BaseModel):
             if seed < 0:
                 raise ValueError("Seed timestamps must be positive")
         return v
-    
-    model_config = ConfigDict(
-        validate_assignment=True,
-        use_enum_values=True
-    )
+
+    model_config = ConfigDict(validate_assignment=True, use_enum_values=True)

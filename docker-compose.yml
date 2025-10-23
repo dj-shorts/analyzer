@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  # DJ Shorts Analyzer service
+  analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: dj-shorts/analyzer:latest
+    container_name: analyzer
+    volumes:
+      - ./data:/data
+      - ./clips:/clips
+      - ./metrics:/metrics
+    user: "501:20"
+    environment:
+      - METRICS_ENABLED=true
+      - PYTHONUNBUFFERED=1
+      - NUMBA_CACHE_DIR=/tmp/numba_cache
+    networks:
+      - monitoring
+    # Command can be overridden when running
+    # docker-compose run analyzer analyzer /data/video.mp4 --clips 3
+    command: ["python", "-m", "analyzer.cli", "--help"]
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./metrics:/metrics:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Metrics server to expose .prom files via HTTP
+  metrics-server:
+    image: python:3.11-slim
+    container_name: metrics-server
+    volumes:
+      - ./metrics:/metrics:ro
+      - ./metrics_server.py:/app/metrics_server.py:ro
+    command: ["python", "/app/metrics_server.py"]
+    environment:
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: grafana
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+networks:
+  monitoring:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+

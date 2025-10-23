@@ -8,6 +8,9 @@
   [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
   [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
   [![Release](https://img.shields.io/github/v/release/dj-shorts/analyzer)](https://github.com/dj-shorts/analyzer/releases)
+  [![CI](https://github.com/dj-shorts/analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/dj-shorts/analyzer/actions/workflows/ci.yml)
+  [![Security](https://github.com/dj-shorts/analyzer/actions/workflows/security.yml/badge.svg)](https://github.com/dj-shorts/analyzer/actions/workflows/security.yml)
+  [![Docker](https://github.com/dj-shorts/analyzer/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dj-shorts/analyzer/actions/workflows/docker-publish.yml)
   
 </div>
 
@@ -120,7 +123,44 @@ This release removes automatic video download functionality and migrates to a ma
 
 ## 🛠️ Installation
 
-This project uses `uv` for dependency management:
+### Option 1: Docker (Recommended)
+
+The easiest way to run the analyzer:
+
+```bash
+# Pull the image
+docker pull ghcr.io/dj-shorts/analyzer:latest
+
+# Or build locally
+docker build -t dj-shorts/analyzer:latest .
+
+# Run analyzer
+docker run --rm -v $(pwd)/data:/data dj-shorts/analyzer:latest analyzer /data/video.mp4 --clips 3
+```
+
+See [docs/DOCKER.md](docs/DOCKER.md) for complete Docker usage guide.
+
+### Option 1.5: Docker Compose with Monitoring (Full Stack)
+
+Run analyzer with Prometheus and Grafana monitoring:
+
+```bash
+# Start all services (analyzer, prometheus, grafana)
+docker-compose up -d
+
+# Run analysis
+docker-compose run --rm analyzer analyzer /data/video.mp4 --clips 3 --metrics /metrics/output.txt
+
+# Access monitoring
+open http://localhost:3000  # Grafana (admin/admin)
+open http://localhost:9090  # Prometheus
+```
+
+See [docs/MONITORING.md](docs/MONITORING.md) for monitoring setup guide.
+
+### Option 2: Local Installation
+
+Using `uv` for dependency management:
 
 ```bash
 # Clone repository
@@ -352,6 +392,27 @@ python -m src.analyzer.schema output.json --csv output.csv
 # Verbose validation
 python -m src.analyzer.schema output.json --verbose
 ```
+
+## 🧪 Testing with TestSprite
+
+Comprehensive test reporting with TestSprite integration:
+
+```bash
+# Run tests locally with TestSprite
+export TESTSPRITE_ENABLED=true
+uv run pytest -v
+
+# View results in TestSprite dashboard
+open https://app.testsprite.com/dj-shorts/analyzer
+```
+
+**Test Suite**: ~200 tests covering:
+- Unit tests (audio, beats, motion)
+- Integration tests (full pipeline)
+- Performance tests (benchmarks)
+- Regression tests (known issues)
+
+See [docs/TESTSPRITE.md](docs/TESTSPRITE.md) for complete testing guide.
 
 ## 🔧 Technical Specifications
 

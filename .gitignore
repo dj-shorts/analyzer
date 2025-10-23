@@ -54,7 +54,7 @@ COST_MODEL_SCENARIOS.csv
 COST_MODEL.md
 create_gh_issues_from_json.mjs
 create_github_issues.py
-docker-compose.yml
+# docker-compose.yml
 EPIC_B_GITHUB_MANAGEMENT.md
 find_project_id.mjs
 get_project_id.sh
@@ -78,6 +78,10 @@ data/
 # Release artifacts
 *.tar.gz
 *.zip
+
+# Monitoring data
+metrics/
+!metrics/.gitkeep
 
 # Temporary files
 *.tmp

@@ -1,0 +1,62 @@
+# Git
+.git
+.gitignore
+.github
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# Virtual environments
+.venv
+venv
+env
+ENV
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Test data and outputs
+clips/
+data/
+downloads/
+test_*.mp4
+*.mkv
+*.mov
+
+# Documentation and scripts (not needed in runtime)
+tests/
+scripts/
+docs/
+*.md
+!README.md
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.tar.gz
+*.zip
+
+# CI/CD
+.pr_body.md
+
+
