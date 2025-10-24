@@ -8,8 +8,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-import librosa
-
+from .audio_security import safe_load_audio
 from .config import Config
 
 logger = logging.getLogger(__name__)
@@ -44,9 +43,9 @@ class AudioExtractor:
             # Extract audio using ffmpeg
             self._extract_with_ffmpeg(self.config.input_path, temp_wav_path)
 
-            # Load audio with librosa
-            audio_data, sr = librosa.load(
-                str(temp_wav_path), sr=self.sample_rate, mono=True
+            # Load audio with librosa (using secure wrapper)
+            audio_data, sr = safe_load_audio(
+                temp_wav_path, sr=self.sample_rate, mono=True
             )
 
             # Get audio duration

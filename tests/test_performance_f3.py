@@ -117,9 +117,9 @@ class TestPerformanceEpicF3:
             print(f"  Expected max time: {expected_max_time:.2f}s")
 
             # Verify performance targets
-            assert (
-                analysis_time <= expected_max_time
-            ), f"Analysis took {analysis_time:.2f}s, expected ≤{expected_max_time:.2f}s"
+            assert analysis_time <= expected_max_time, (
+                f"Analysis took {analysis_time:.2f}s, expected ≤{expected_max_time:.2f}s"
+            )
             assert memory_usage < 500, f"Memory usage {memory_usage:.2f}MB too high"
 
             # Verify output quality
@@ -197,12 +197,12 @@ class TestPerformanceEpicF3:
         )
 
         # Verify reasonable performance
-        assert (
-            optimal_config["time"] < 5.0
-        ), f"STFT processing too slow: {optimal_config['time']:.3f}s"
-        assert (
-            optimal_config["memory"] < 100
-        ), f"STFT memory usage too high: {optimal_config['memory']:.2f}MB"
+        assert optimal_config["time"] < 5.0, (
+            f"STFT processing too slow: {optimal_config['time']:.3f}s"
+        )
+        assert optimal_config["memory"] < 100, (
+            f"STFT memory usage too high: {optimal_config['memory']:.2f}MB"
+        )
 
     def test_memory_profiling_novelty_detection(self):
         """Profile memory usage during novelty detection."""
@@ -239,9 +239,9 @@ class TestPerformanceEpicF3:
         print(f"  Frames processed: {len(result['time_axis'])}")
 
         # Verify reasonable memory usage
-        assert (
-            memory_increase < 200
-        ), f"Memory increase too high: {memory_increase:.2f}MB"
+        assert memory_increase < 200, (
+            f"Memory increase too high: {memory_increase:.2f}MB"
+        )
 
     def test_cpu_profiling_beat_tracking(self):
         """Profile CPU usage during beat tracking."""
@@ -350,12 +350,12 @@ class TestPerformanceEpicF3:
             assert "novelty_scores" in result
 
         # Verify reasonable concurrent performance
-        assert (
-            concurrent_time < 15.0
-        ), f"Concurrent analysis too slow: {concurrent_time:.2f}s"
-        assert (
-            memory_usage < 300
-        ), f"Concurrent memory usage too high: {memory_usage:.2f}MB"
+        assert concurrent_time < 15.0, (
+            f"Concurrent analysis too slow: {concurrent_time:.2f}s"
+        )
+        assert memory_usage < 300, (
+            f"Concurrent memory usage too high: {memory_usage:.2f}MB"
+        )
 
     def test_large_file_memory_efficiency(self):
         """Test memory efficiency with large audio files."""
@@ -395,13 +395,13 @@ class TestPerformanceEpicF3:
             memory_increase = current_memory - start_memory
 
             print(
-                f"Chunk {i+1}/{len(chunks)}: Memory increase: {memory_increase:.2f}MB"
+                f"Chunk {i + 1}/{len(chunks)}: Memory increase: {memory_increase:.2f}MB"
             )
 
             # Verify memory doesn't grow excessively
-            assert (
-                memory_increase < 500
-            ), f"Memory usage too high after chunk {i+1}: {memory_increase:.2f}MB"
+            assert memory_increase < 500, (
+                f"Memory usage too high after chunk {i + 1}: {memory_increase:.2f}MB"
+            )
 
         # Verify all chunks processed successfully
         assert len(results) == len(chunks)
@@ -451,12 +451,12 @@ class TestPerformanceEpicF3:
         print(f"  Memory regression factor: {memory_regression:.2f}x")
 
         # Verify no significant regression
-        assert (
-            time_regression <= 1.2
-        ), f"Performance regression detected: {time_regression:.2f}x slower"
-        assert (
-            memory_regression <= 1.5
-        ), f"Memory regression detected: {memory_regression:.2f}x more memory"
+        assert time_regression <= 1.2, (
+            f"Performance regression detected: {time_regression:.2f}x slower"
+        )
+        assert memory_regression <= 1.5, (
+            f"Memory regression detected: {memory_regression:.2f}x more memory"
+        )
 
         # Verify result quality maintained
         assert "time_axis" in result
@@ -497,7 +497,7 @@ class TestSTFTOptimizationEpicF3:
             )
 
             print(
-                f"Hop length {hop_length}: {processing_time:.3f}s, {len(result['time_axis'])} frames, {sr/hop_length:.1f} Hz resolution"
+                f"Hop length {hop_length}: {processing_time:.3f}s, {len(result['time_axis'])} frames, {sr / hop_length:.1f} Hz resolution"
             )
 
         # Find optimal hop length
@@ -505,9 +505,9 @@ class TestSTFTOptimizationEpicF3:
         print(f"\nOptimal hop length: {optimal['hop_length']} ({optimal['time']:.3f}s)")
 
         # Verify reasonable performance
-        assert (
-            optimal["time"] < 3.0
-        ), f"Optimal hop length too slow: {optimal['time']:.3f}s"
+        assert optimal["time"] < 3.0, (
+            f"Optimal hop length too slow: {optimal['time']:.3f}s"
+        )
 
     def test_window_size_optimization(self):
         """Test different window sizes for optimal performance."""
@@ -539,7 +539,7 @@ class TestSTFTOptimizationEpicF3:
             )
 
             print(
-                f"Window size {window_size}: {processing_time:.3f}s, {len(result['time_axis'])} frames, {sr/window_size:.1f} Hz resolution"
+                f"Window size {window_size}: {processing_time:.3f}s, {len(result['time_axis'])} frames, {sr / window_size:.1f} Hz resolution"
             )
 
         # Find optimal window size
@@ -549,6 +549,6 @@ class TestSTFTOptimizationEpicF3:
         )
 
         # Verify reasonable performance
-        assert (
-            optimal["time"] < 3.0
-        ), f"Optimal window size too slow: {optimal['time']:.3f}s"
+        assert optimal["time"] < 3.0, (
+            f"Optimal window size too slow: {optimal['time']:.3f}s"
+        )

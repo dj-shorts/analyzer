@@ -14,6 +14,23 @@
   
 </div>
 
+## 🚀 What's New in v0.4.1
+
+This release focuses on **stability and performance improvements**.
+
+### 🎯 Major Changes in v0.4.1
+- **🔧 Enhanced Testing**: Improved test configuration and reporting capabilities
+- **📈 Test Coverage**: Comprehensive test suite with ~200 tests across multiple categories
+- **🚀 Performance**: Optimized audio and video processing algorithms
+- **🐛 Bug Fixes**: Various stability improvements and bug fixes
+
+### 🎯 Previous Changes in v0.4.0
+- **🐳 Docker Support**: Complete containerization with multi-stage builds
+- **🔄 CI/CD Pipeline**: Automated testing, linting, and security scanning
+- **📊 Monitoring Stack**: Prometheus + Grafana integration for real-time monitoring
+- **🔒 Security**: Bandit, Safety, and Trivy security scanning
+- **📦 Package Management**: Modern Python packaging with uv support
+
 ## 🚀 Quick Start
 
 ### Docker (Recommended)
@@ -104,8 +121,8 @@ uv run mypy analyzer
 
 ## 📈 Project Status
 
-- **Version**: v0.4.0
-- **Epic Coverage**: A, B, C, D, E1, E2, E3, F, G1, H1, H2, H3
+- **Version**: v0.4.1
+- **Epic Coverage**: A, B, C, D, E1, E2, E3, F, G1, H1, H2, H3, H4
 - **Test Coverage**: Comprehensive unit, integration, and performance tests
 - **Production Ready**: ✅ Yes
 - **Docker Support**: ✅ Complete containerization

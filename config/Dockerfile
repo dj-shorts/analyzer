@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for DJ Shorts Analyzer
 # Stage 1: Builder - Install dependencies and build
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim-bookworm AS builder
 
 # Set working directory
 WORKDIR /build
@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv for dependency management
-RUN pip install --no-cache-dir uv>=0.5.0
+# Install uv for dependency management and update pip to latest version
+RUN pip install --no-cache-dir --upgrade pip uv>=0.5.0
 
 # Copy dependency files and source code for uv to build
 COPY pyproject.toml uv.lock README.md ./
@@ -22,15 +22,21 @@ COPY src/ ./src/
 RUN uv sync --frozen --no-dev
 
 # Stage 2: Runtime - Minimal production image
-FROM python:3.11-slim
+FROM python:3.11-slim-bookworm
 
 # Install system dependencies required for analyzer
+# Update to latest versions for security patches
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
+    libsndfile1 \
+    libxslt1.1 \
+    libxml2 \
+    && apt-get upgrade -y \
+    && apt-get dist-upgrade -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security
@@ -49,6 +55,13 @@ COPY pyproject.toml /app/
 
 # Set ownership to non-root user
 RUN chown -R analyzer:analyzer /app
+
+# Set security-focused environment variables
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONHASHSEED=random
+ENV PIP_NO_CACHE_DIR=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Switch to non-root user
 USER analyzer

@@ -8,6 +8,7 @@ from typing import Any
 import librosa
 import numpy as np
 
+from .audio_security import safe_resample_audio, safe_to_mono
 from .config import Config
 
 logger = logging.getLogger(__name__)
@@ -37,12 +38,12 @@ class BeatTracker:
         audio = audio_data["audio"]
         sample_rate = audio_data.get("sample_rate", self.sample_rate)
 
-        # Ensure audio is mono and at correct sample rate
+        # Ensure audio is mono and at correct sample rate (using secure wrappers)
         if len(audio.shape) > 1:
-            audio = librosa.to_mono(audio)
+            audio = safe_to_mono(audio)
 
         if sample_rate != self.sample_rate:
-            audio = librosa.resample(
+            audio = safe_resample_audio(
                 audio, orig_sr=sample_rate, target_sr=self.sample_rate
             )
             sample_rate = self.sample_rate

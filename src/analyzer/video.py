@@ -255,7 +255,10 @@ class VideoExporter:
 
             # Run FFmpeg command
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=300  # 5 minute timeout
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=300,  # 5 minute timeout
             )
 
             if result.returncode == 0 and output_path.exists():
